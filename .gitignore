@@ -1,0 +1,69 @@
+# =============================================================================
+# PyQuest .gitignore
+#
+# Lists files and folders Git must never track. Each group excludes one of:
+# generated files that can be rebuilt, machine-specific files that would
+# break on another computer, or secrets that must never reach a public repo.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Virtual environment
+# Rebuilt on any machine with `pip install -r requirements.txt`, so committing
+# it would add thousands of files and tie the repo to one computer's paths.
+# -----------------------------------------------------------------------------
+.venv/
+venv/
+env/
+
+# -----------------------------------------------------------------------------
+# Secrets and local configuration
+# .env holds API keys and the secret key used to sign sessions. A leaked key
+# can be abused or run up usage limits, so it stays local only.
+# .env.example is the exception: it lists the variable NAMES (no values) so
+# anyone cloning the repo knows what to configure.
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# -----------------------------------------------------------------------------
+# Local database and Flask instance folder
+# The SQLite file is local development data and is recreated by migrations
+# and seed scripts. The deployed app uses a managed Postgres database instead.
+# -----------------------------------------------------------------------------
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# -----------------------------------------------------------------------------
+# Python bytecode caches
+# Created automatically whenever Python runs a file. Regenerated on demand.
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+
+# -----------------------------------------------------------------------------
+# Test and coverage output
+# Produced by pytest runs. Results belong in CI, not in version control.
+# -----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+
+# -----------------------------------------------------------------------------
+# Editor and operating system files
+# Personal editor settings and OS metadata differ per machine and add noise
+# to the commit history.
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# -----------------------------------------------------------------------------
+# Logs
+# -----------------------------------------------------------------------------
+*.log
+logs/
