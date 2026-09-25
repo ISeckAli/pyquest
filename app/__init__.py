@@ -49,7 +49,18 @@ def create_app(config_name=None):
 
     # Bind the shared extension objects to this specific app instance.
     db.init_app(app)
-    migrate.init_app(app, db)
+
+    # render_as_batch makes migrations work on SQLite, which cannot alter an
+    # existing table in place (for example to drop or rename a column).
+    # Batch mode copies the table, applies the change, and swaps it in.
+    # Postgres does not need this, but it is harmless there, so the same
+    # migration scripts run on both databases.
+    migrate.init_app(app, db, render_as_batch=True)
+
+    # Importing the models package registers every table with SQLAlchemy.
+    # Without this import, migrations would not see the models and
+    # db.create_all() in the tests would create no tables.
+    from app import models  # noqa: F401
 
     _register_blueprints(app)
 
