@@ -10,8 +10,10 @@ init_app(). Keeping creation and binding separate has two benefits:
    importing the application itself, which avoids circular imports.
 """
 
+from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import MetaData
 
 # Predictable names for database constraints (primary keys, foreign keys,
@@ -42,3 +44,19 @@ db = SQLAlchemy(metadata=MetaData(naming_convention=NAMING_CONVENTION))
 # versioned script, so the local and production databases can be brought to
 # the same structure reliably instead of being edited by hand.
 migrate = Migrate()
+
+# Session-based login: remembers which account is signed in by storing its id
+# in the signed session cookie, and loads that account on each request.
+login_manager = LoginManager()
+
+# Where login_required sends visitors who are not signed in. "auth.login" is
+# the login view in the auth blueprint (built later in this part).
+login_manager.login_view = "auth.login"
+login_manager.login_message = "Please log in to continue."
+login_manager.login_message_category = "info"
+
+# Cross-site request forgery protection for every form. Each form includes a
+# secret token tied to the user's session; a request without the matching
+# token is rejected. This stops another website from making a signed-in
+# user's browser submit PyQuest forms without their knowledge (spec PR-N2).
+csrf = CSRFProtect()

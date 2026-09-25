@@ -18,7 +18,7 @@ import os
 from flask import Flask
 
 from app.config import config_by_name
-from app.extensions import db, migrate
+from app.extensions import csrf, db, login_manager, migrate
 
 
 def create_app(config_name=None):
@@ -57,9 +57,13 @@ def create_app(config_name=None):
     # migration scripts run on both databases.
     migrate.init_app(app, db, render_as_batch=True)
 
+    login_manager.init_app(app)
+    csrf.init_app(app)
+
     # Importing the models package registers every table with SQLAlchemy.
     # Without this import, migrations would not see the models and
-    # db.create_all() in the tests would create no tables.
+    # db.create_all() in the tests would create no tables. It also registers
+    # the Flask-Login user loader defined alongside UserAccount.
     from app import models  # noqa: F401
 
     _register_blueprints(app)

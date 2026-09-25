@@ -10,9 +10,13 @@ Secrets and machine-specific values (secret key, database URL, API keys) are
 read from environment variables instead of being written in this file. Locally
 they come from a git-ignored .env file; in production the hosting platform
 supplies them. This keeps secrets out of the public repository.
+
+Values marked (tunable) in the product specification live here, so they can
+be changed in one place instead of being scattered through the code.
 """
 
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -36,6 +40,29 @@ class Config:
     # Modification tracking powers an event system this project does not use,
     # and it costs extra memory, so it is turned off.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # --- Session security (spec NFR03 and PR-A2) -----------------------------
+
+    # Sessions end after 30 minutes without activity. Flask re-issues the
+    # session cookie on every request by default, so the 30 minutes restart
+    # each time the user does something: an inactivity timeout, not a fixed
+    # session length.
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+
+    # HttpOnly stops page scripts from reading the session cookie, so a
+    # cross-site scripting bug could not be used to steal a session.
+    SESSION_COOKIE_HTTPONLY = True
+
+    # Lax stops the cookie being sent with requests started by other websites
+    # (such as a hidden form on another site), while still allowing normal
+    # links to PyQuest to arrive signed in. A second layer beside CSRF tokens.
+    SESSION_COOKIE_SAMESITE = "Lax"
+
+    # --- Authentication rules (spec FR01 and FR02, tunable) ------------------
+
+    PASSWORD_MIN_LENGTH = 10
+    LOGIN_MAX_FAILED_ATTEMPTS = 5
+    LOGIN_LOCKOUT_MINUTES = 15
 
 
 class DevelopmentConfig(Config):
@@ -62,6 +89,11 @@ class TestingConfig(Config):
     # data left behind by another test.
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
 
+    # Most tests submit forms directly, so CSRF tokens are switched off here
+    # to keep them focused on the behaviour under test. A dedicated test
+    # turns CSRF back on to prove forms reject requests without a token.
+    WTF_CSRF_ENABLED = False
+
 
 class ProductionConfig(Config):
     """The deployed application."""
@@ -72,6 +104,10 @@ class ProductionConfig(Config):
     # than silently running with an insecure key or no database.
     SECRET_KEY = os.environ.get("SECRET_KEY")
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+
+    # Only send the session cookie over HTTPS. Not set in development, where
+    # the local server uses plain HTTP and the cookie would never be sent.
+    SESSION_COOKIE_SECURE = True
 
 
 # Maps the names used by the application factory to the classes above, so

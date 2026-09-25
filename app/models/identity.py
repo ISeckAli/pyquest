@@ -21,11 +21,12 @@ from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Optional
 
+from flask_login import UserMixin
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.extensions import db
+from app.extensions import db, login_manager
 
 
 def utc_now():
@@ -157,11 +158,17 @@ class Person(Party):
         return value.strip().lower()
 
 
-class UserAccount(db.Model):
+class UserAccount(UserMixin, db.Model):
     """Login credentials for a Party (SRS Part C UserAccount).
 
     Kept separate from identity so authentication data can change (password
     resets, lockouts) without touching who the person is.
+
+    UserMixin supplies what Flask-Login expects of a user object:
+    is_authenticated, is_anonymous, and get_id(), which returns this
+    account's id as the value stored in the session cookie. The is_active
+    column below takes precedence over UserMixin's version, so a deactivated
+    account is refused by Flask-Login automatically.
     """
 
     __tablename__ = "user_account"
@@ -204,8 +211,36 @@ class UserAccount(db.Model):
         """Return True if the password matches the stored hash."""
         return check_password_hash(self.password_hash, password)
 
+    def has_role(self, role_type):
+        """Return True if the account's party holds the given role.
+
+        Lets views and templates ask current_user.has_role(...) directly,
+        without reaching through to the party each time.
+        """
+        return self.party.has_role(role_type)
+
+    @property
+    def display_name(self):
+        """The account holder's display name, for page headers and menus."""
+        return self.party.display_name
+
     def __repr__(self):
         return f"<UserAccount {self.id} party={self.party_id}>"
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Return the signed-in account for the id stored in the session.
+
+    Flask-Login calls this on every request from a signed-in browser.
+    Returning None signs the visitor out, which happens when the account no
+    longer exists or has been deactivated, so deactivation takes effect on
+    the user's very next request rather than only at their next login.
+    """
+    account = db.session.get(UserAccount, int(user_id))
+    if account is None or not account.is_active:
+        return None
+    return account
 
 
 class Role(db.Model):
