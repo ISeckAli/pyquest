@@ -1,0 +1,42 @@
+# Continuous integration: runs the full test suite on GitHub's servers for
+# every push and pull request to main.
+#
+# Each run starts from a clean Linux machine and installs only what
+# requirements.txt lists, so a passing run proves the project works outside
+# the developer's own computer, not just on it.
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the repository's code onto the CI machine.
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # Install the same Python version used in development, so results
+      # match local runs. The pip cache reuses downloaded packages between
+      # runs, which makes later runs faster.
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # The tests use the "testing" configuration with an in-memory database,
+      # so no secrets or database server are needed in CI.
+      - name: Run tests
+        run: pytest
