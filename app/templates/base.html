@@ -1,0 +1,54 @@
+{#
+  Base layout for every PyQuest page.
+
+  Pages extend this template and fill in its blocks, so the document head,
+  navigation, background effects, and footer are defined once instead of
+  copied into every page:
+
+    {% extends "base.html" %}
+    {% block title %}Page name{% endblock %}
+    {% block content %}...page content...{% endblock %}
+
+  Jinja2 automatically escapes any values inserted into templates, which
+  protects against cross-site scripting (XSS) from user-provided text.
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {# Makes the layout scale correctly on phones instead of rendering as a
+       shrunken desktop page. #}
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {# The brand leads the tab title; each page supplies the part after it. #}
+    <title>PyQuest | {% block title %}Level Up Your Python{% endblock %}</title>
+    {# url_for builds the path from Flask's static folder, so links keep
+       working even if the site is later served under a different path. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {# Decorative glowing blobs behind all page content. aria-hidden hides
+       them from screen readers, since they carry no information. #}
+    <div class="blob blob-purple" aria-hidden="true"></div>
+    <div class="blob blob-coral" aria-hidden="true"></div>
+
+    <header class="site-header">
+        <nav class="nav">
+            <a class="nav-brand" href="{{ url_for('main.index') }}">PyQuest</a>
+            <div class="nav-links">
+                {# Built from url_for so the link reaches the Features section
+                   from any page, not only from the landing page. Login and
+                   Sign Up are added when authentication is implemented. #}
+                <a href="{{ url_for('main.index') }}#features">Features</a>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p>&copy; 2026 PyQuest &mdash; Cyber Learning Arcade</p>
+    </footer>
+</body>
+</html>

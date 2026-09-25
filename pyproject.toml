@@ -1,0 +1,18 @@
+# Project-wide tool configuration.
+#
+# pyproject.toml is the standard home for Python tool settings, so pytest,
+# linters, and formatters can all be configured in one place instead of in a
+# separate file per tool.
+
+[tool.pytest.ini_options]
+# Where pytest looks for tests, so it never scans .venv or other folders.
+testpaths = ["tests"]
+
+# Adds the project root to Python's import path during test runs, so test
+# files can `import app` the same way the running application does. Without
+# this, tests fail with "No module named 'app'".
+pythonpath = ["."]
+
+# -ra prints a short summary of any tests that were skipped, failed, or
+# errored at the end of the run, so problems are not lost in long output.
+addopts = "-ra"

@@ -1,0 +1,46 @@
+{#
+  Landing page, rendered by the main blueprint's index view.
+
+  Extends the shared layout in base.html and fills in only the title and
+  content blocks.
+
+  Both hero buttons currently scroll to the Features section. They are
+  pointed at the sign-up and challenge library pages once those features
+  exist, so the page never links to a route that is not built yet.
+
+  Emoji in the card headings are wrapped in aria-hidden spans so screen
+  readers read the heading text only, rather than announcing each emoji by
+  name (for example "high voltage").
+#}
+{% extends "base.html" %}
+
+{% block title %}Level Up Your Python{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1 class="hero-title">Learn Python. Earn XP. Unlock Achievements.</h1>
+    <p class="hero-lead">
+        PyQuest gamifies learning Python with beginner coding challenges.
+        Complete missions, earn points, level up, and build real coding skills.
+    </p>
+    <div class="hero-actions">
+        <a class="btn btn-primary" href="#features">Start Your Mission</a>
+        <a class="btn btn-secondary" href="#features">View Challenges</a>
+    </div>
+</section>
+
+<section id="features" class="features">
+    <article class="card">
+        <h2><span aria-hidden="true">⚡</span> XP &amp; Levels</h2>
+        <p>Earn experience points for every coding challenge you complete.</p>
+    </article>
+    <article class="card">
+        <h2><span aria-hidden="true">🏆</span> Achievements</h2>
+        <p>Unlock badges for streaks, milestones, and mastering Python topics.</p>
+    </article>
+    <article class="card">
+        <h2><span aria-hidden="true">🔥</span> Daily Missions</h2>
+        <p>Stay consistent with daily coding tasks and maintain your streak.</p>
+    </article>
+</section>
+{% endblock %}
