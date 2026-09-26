@@ -64,6 +64,21 @@ class Config:
     LOGIN_MAX_FAILED_ATTEMPTS = 5
     LOGIN_LOCKOUT_MINUTES = 15
 
+    # --- Challenge rules (spec FR07, FR12, tunable) --------------------------
+
+    # Default XP for a challenge of each difficulty. Instructors may set a
+    # different value per challenge; this is used when they leave it blank.
+    CHALLENGE_XP_BY_DIFFICULTY = {"beginner": 10, "intermediate": 25, "advanced": 50}
+
+    # A challenge cannot be published without at least this many test cases
+    # of each kind. Hidden tests stop learners from passing by printing the
+    # expected output of the examples they can see.
+    CHALLENGE_MIN_VISIBLE_TESTS = 1
+    CHALLENGE_MIN_HIDDEN_TESTS = 2
+
+    # Instructor-written hints used when the AI Coach is unavailable (NFR05).
+    CHALLENGE_MAX_FALLBACK_HINTS = 3
+
 
 class DevelopmentConfig(Config):
     """Local development on a developer's machine."""
