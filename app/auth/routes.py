@@ -9,6 +9,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from app.auth import bp
 from app.auth.forms import LoginForm, PasswordChangeForm, ProfileForm, RegistrationForm
+from app.models import RoleType
 from app.services.account import (
     AccountSettingsError,
     change_password,
@@ -17,15 +18,12 @@ from app.services.account import (
 )
 from app.services.auth import AuthError, RegistrationError, authenticate, register_learner
 
-# Where users land after signing in or registering.
-HOME_ENDPOINT = "learner.dashboard"
-
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
     """Show the sign-up form and create a learner account (spec FR01)."""
     if current_user.is_authenticated:
-        return redirect(url_for(HOME_ENDPOINT))
+        return redirect(_home_url(current_user))
 
     form = RegistrationForm()
 
@@ -42,7 +40,7 @@ def register():
         else:
             _start_session(account)
             flash("Welcome to PyQuest! Your account is ready.", "success")
-            return redirect(url_for(HOME_ENDPOINT))
+            return redirect(_home_url(account))
 
     return render_template("auth/register.html", form=form)
 
@@ -51,7 +49,7 @@ def register():
 def login():
     """Show the login form and sign the user in (spec FR02)."""
     if current_user.is_authenticated:
-        return redirect(url_for(HOME_ENDPOINT))
+        return redirect(_home_url(current_user))
 
     form = LoginForm()
     login_error = None
@@ -66,7 +64,7 @@ def login():
         else:
             _start_session(account)
             target = _safe_redirect_target(request.args.get("next"))
-            return redirect(target or url_for(HOME_ENDPOINT))
+            return redirect(target or _home_url(account))
 
     return render_template("auth/login.html", form=form, login_error=login_error)
 
@@ -136,6 +134,20 @@ def settings():
     return render_template(
         "auth/settings.html", profile_form=profile_form, password_form=password_form
     )
+
+
+def _home_url(account):
+    """The page an account lands on after signing in, based on its roles.
+
+    Learners go to their dashboard. Staff who are not learners (instructors
+    and administrators) go to the instructor pages, since the learner
+    dashboard would refuse them.
+    """
+    if account.has_role(RoleType.LEARNER):
+        return url_for("learner.dashboard")
+    if account.has_role(RoleType.INSTRUCTOR) or account.has_role(RoleType.SYSTEM_ADMINISTRATOR):
+        return url_for("instructor.challenge_list")
+    return url_for("main.index")
 
 
 def _start_session(account):

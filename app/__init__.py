@@ -65,6 +65,15 @@ def create_app(config_name=None):
     # db.create_all() in the tests would create no tables. It also registers
     # the Flask-Login user loader defined alongside UserAccount.
     from app import models  # noqa: F401
+    from app.models import RoleType
+
+    # Makes RoleType available in every template, so pages can show links
+    # by role, for example current_user.has_role(RoleType.INSTRUCTOR).
+    # These checks only decide what is displayed; every protected route
+    # still checks the role itself on the server.
+    @app.context_processor
+    def inject_role_types():
+        return {"RoleType": RoleType}
 
     _register_blueprints(app)
 
@@ -86,6 +95,7 @@ def _register_blueprints(app):
     """
     from app.auth import bp as auth_bp
     from app.challenges import bp as challenges_bp
+    from app.instructor import bp as instructor_bp
     from app.learner import bp as learner_bp
     from app.main import bp as main_bp
 
@@ -93,6 +103,7 @@ def _register_blueprints(app):
     app.register_blueprint(auth_bp)
     app.register_blueprint(learner_bp)
     app.register_blueprint(challenges_bp)
+    app.register_blueprint(instructor_bp)
 
 
 def _require_production_settings(app):

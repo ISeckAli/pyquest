@@ -1,0 +1,132 @@
+{#
+  Challenge edit page, rendered by instructor.edit_challenge: publishing
+  status and actions, test cases, and the challenge details.
+
+  Every action is a small POST form with a CSRF token. Deleting uses a
+  fold-out <details> section with its own confirm button, a confirmation
+  step that needs no JavaScript, so it keeps working under the strict
+  security headers added later (spec PR-N2).
+#}
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox %}
+
+{% block title %}Edit: {{ challenge.title }}{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section challenge-page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('instructor.challenge_list') }}">Your challenges</a>
+        <span aria-hidden="true">/</span>
+        Edit
+    </nav>
+
+    <div class="toolbar">
+        <h1 class="page-title page-title-left">{{ challenge.title }}</h1>
+        <span class="pill pill-status-{{ challenge.status.value }}">{{ challenge.status.value | title }}</span>
+    </div>
+
+    {# ---------------- Publishing ---------------- #}
+    <div class="panel">
+        <h2>Publishing</h2>
+
+        {% if challenge.is_published %}
+            <p>Learners can find this challenge in the library.</p>
+        {% elif problems %}
+            <p>Before learners can see this challenge:</p>
+            <ul class="problem-list">
+                {% for problem in problems %}
+                    <li>{{ problem }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Ready to publish.</p>
+        {% endif %}
+
+        <div class="button-row">
+            <a class="btn btn-secondary btn-small" href="{{ url_for('instructor.preview_challenge', challenge_id=challenge.id) }}">Preview</a>
+
+            {% if challenge.is_published %}
+                <form class="inline-form" method="post" action="{{ url_for('instructor.unpublish_challenge', challenge_id=challenge.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary btn-small">Unpublish</button>
+                </form>
+            {% else %}
+                <form class="inline-form" method="post" action="{{ url_for('instructor.publish_challenge', challenge_id=challenge.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary btn-small">Publish</button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% if not challenge.is_published %}
+            <details class="danger-zone">
+                <summary>Delete challenge</summary>
+                <p>Deletes this challenge with its test cases and hints. This cannot be undone.</p>
+                <form method="post" action="{{ url_for('instructor.delete_challenge_route', challenge_id=challenge.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger btn-small">Yes, delete it</button>
+                </form>
+            </details>
+        {% endif %}
+    </div>
+
+    {# ---------------- Test cases ---------------- #}
+    <div class="panel" id="tests">
+        <h2>Test cases</h2>
+        <p class="field-hint">
+            Visible tests appear to learners as examples. Hidden tests are used for
+            grading only and are never shown.
+        </p>
+
+        {% for test in challenge.test_cases %}
+            <div class="test-case">
+                <div class="test-case-header">
+                    {% if test.is_hidden %}
+                        <span class="pill pill-hidden">Hidden</span>
+                    {% else %}
+                        <span class="pill pill-visible">Visible</span>
+                    {% endif %}
+                    <form class="inline-form" method="post" action="{{ url_for('instructor.remove_test', challenge_id=challenge.id, test_id=test.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-link-danger">Remove</button>
+                    </form>
+                </div>
+                <div class="example">
+                    <div>
+                        <h3>Input</h3>
+                        <pre class="code-block">{{ test.input_data or "(no input)" }}</pre>
+                    </div>
+                    <div>
+                        <h3>Expected output</h3>
+                        <pre class="code-block">{{ test.expected_output }}</pre>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="empty-state">No test cases yet.</p>
+        {% endfor %}
+
+        <h3 class="form-section-title">Add a test case</h3>
+        <form method="post" action="{{ url_for('instructor.add_test', challenge_id=challenge.id) }}" novalidate>
+            {{ test_form.hidden_tag() }}
+            {{ render_field(test_form.input_data) }}
+            {{ render_field(test_form.expected_output) }}
+            {{ render_checkbox(test_form.is_hidden) }}
+            {{ test_form.submit(class="btn btn-primary btn-small") }}
+        </form>
+    </div>
+
+    {# ---------------- Details ---------------- #}
+    <div class="panel">
+        <h2>Details</h2>
+        <form method="post" novalidate>
+            {% include "instructor/_challenge_fields.html" %}
+            {{ form.submit(class="btn btn-primary btn-small") }}
+        </form>
+    </div>
+</section>
+{% endblock %}

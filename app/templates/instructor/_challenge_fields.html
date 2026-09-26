@@ -1,0 +1,41 @@
+{#
+  The challenge detail fields, shared by the new and edit pages so both
+  forms always match. Included inside a <form>; expects a ChallengeForm
+  named `form`.
+#}
+{% from "_macros.html" import render_field %}
+
+{{ form.hidden_tag() }}
+
+{{ render_field(form.title) }}
+
+<div class="field-row">
+    {{ render_field(form.topic_id) }}
+    {{ render_field(form.difficulty) }}
+    {{ render_field(form.xp_value) }}
+</div>
+<p class="field-hint">
+    Leave XP blank to use the default for the difficulty
+    (Beginner {{ config.CHALLENGE_XP_BY_DIFFICULTY.beginner }},
+    Intermediate {{ config.CHALLENGE_XP_BY_DIFFICULTY.intermediate }},
+    Advanced {{ config.CHALLENGE_XP_BY_DIFFICULTY.advanced }}).
+</p>
+
+{{ render_field(form.description) }}
+
+{{ render_field(form.starter_code) }}
+<p class="field-hint">Pre-filled in the learner's code editor.</p>
+
+{{ render_field(form.reference_solution) }}
+<p class="field-hint">
+    A correct solution. Never shown to learners or sent to the AI Coach.
+</p>
+
+<h3 class="form-section-title">Fallback hints</h3>
+<p class="field-hint">
+    Optional. Shown when the AI Coach is unavailable. Order them from a gentle
+    nudge to a specific pointer, and never give the full answer.
+</p>
+{{ render_field(form.hint_1) }}
+{{ render_field(form.hint_2) }}
+{{ render_field(form.hint_3) }}

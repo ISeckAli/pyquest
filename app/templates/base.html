@@ -7,10 +7,14 @@
 
     {% extends "base.html" %}
     {% block title %}Page name{% endblock %}
+    {% block extra_head %}page-specific stylesheet{% endblock %}
     {% block content %}...page content...{% endblock %}
 
   Jinja2 automatically escapes any values inserted into templates, which
   protects against cross-site scripting (XSS) from user-provided text.
+
+  Navigation links are chosen by role, but that only decides what is shown;
+  every protected route checks the role itself on the server (spec FR03).
 #}
 <!DOCTYPE html>
 <html lang="en">
@@ -26,6 +30,9 @@
        style.css holds the theme; components.css builds on it. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    {# Pages add their own stylesheets here, so styles used by only a few
+       pages are not downloaded on every page. #}
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     {# Decorative glowing blobs behind all page content. aria-hidden hides
@@ -39,7 +46,12 @@
             <div class="nav-links">
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('challenges.library') }}">Challenges</a>
-                    <a href="{{ url_for('learner.dashboard') }}">Dashboard</a>
+                    {% if current_user.has_role(RoleType.LEARNER) %}
+                        <a href="{{ url_for('learner.dashboard') }}">Dashboard</a>
+                    {% endif %}
+                    {% if current_user.has_role(RoleType.INSTRUCTOR) or current_user.has_role(RoleType.SYSTEM_ADMINISTRATOR) %}
+                        <a href="{{ url_for('instructor.challenge_list') }}">Instructor</a>
+                    {% endif %}
                     <a href="{{ url_for('auth.settings') }}">Settings</a>
                     {# Logout must be a POST with a CSRF token (see
                        app/auth/routes.py), so it is a small form. #}

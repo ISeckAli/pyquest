@@ -1,0 +1,37 @@
+{#
+  New challenge page, rendered by instructor.new_challenge. The challenge is
+  saved as a draft; test cases are added on the edit page that follows.
+#}
+{% extends "base.html" %}
+
+{% block title %}New Challenge{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section challenge-page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('instructor.challenge_list') }}">Your challenges</a>
+        <span aria-hidden="true">/</span>
+        New
+    </nav>
+    <h1 class="page-title page-title-left">New challenge</h1>
+
+    {% if has_topics %}
+        <div class="panel">
+            <form method="post" novalidate>
+                {% include "instructor/_challenge_fields.html" %}
+                {{ form.submit(class="btn btn-primary btn-small") }}
+            </form>
+        </div>
+        <p class="field-hint">Saved as a draft. You will add test cases on the next page.</p>
+    {% else %}
+        <p class="notice">
+            No topics exist yet. Create one first from the command line, for example:
+            <code>flask --app app add-topic "Strings" --order 1</code>
+        </p>
+    {% endif %}
+</section>
+{% endblock %}

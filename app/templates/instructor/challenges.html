@@ -1,0 +1,61 @@
+{#
+  The instructor's challenge list, rendered by instructor.challenge_list.
+  Administrators see every challenge; instructors see their own.
+#}
+{% extends "base.html" %}
+
+{% block title %}Instructor{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="toolbar">
+        <h1 class="page-title page-title-left">
+            {% if is_admin %}All challenges{% else %}Your challenges{% endif %}
+        </h1>
+        <a class="btn btn-primary btn-small" href="{{ url_for('instructor.new_challenge') }}">New challenge</a>
+    </div>
+
+    {% if challenges %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Topic</th>
+                        <th scope="col">Difficulty</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Tests</th>
+                        <th scope="col"><span class="visually-hidden">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for challenge in challenges %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('instructor.edit_challenge', challenge_id=challenge.id) }}">{{ challenge.title }}</a>
+                            </td>
+                            <td>{{ challenge.topic.name }}</td>
+                            <td>
+                                <span class="pill pill-{{ challenge.difficulty.value }}">{{ challenge.difficulty.label }}</span>
+                            </td>
+                            <td>
+                                <span class="pill pill-status-{{ challenge.status.value }}">{{ challenge.status.value | title }}</span>
+                            </td>
+                            <td>{{ challenge.visible_tests | length }} visible, {{ challenge.hidden_tests | length }} hidden</td>
+                            <td>
+                                <a href="{{ url_for('instructor.preview_challenge', challenge_id=challenge.id) }}">Preview</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No challenges yet. Create your first one to get started.</p>
+    {% endif %}
+</section>
+{% endblock %}
