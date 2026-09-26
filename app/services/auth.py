@@ -8,6 +8,7 @@ Tunable values (password length, attempt limit, lockout length) come from
 the application config, so they are changed in one place (app/config.py).
 """
 
+import math
 from datetime import UTC, datetime, timedelta
 
 from flask import current_app
@@ -67,8 +68,9 @@ class AccountLockedError(AuthError):
     """Too many failed attempts; the account is temporarily locked."""
 
     def __init__(self, minutes):
+        unit = "minute" if minutes == 1 else "minutes"
         super().__init__(
-            f"Too many failed login attempts. Try again in {minutes} minutes."
+            f"Too many failed login attempts. Try again in {minutes} {unit}."
         )
 
 
@@ -232,8 +234,10 @@ def authenticate(email, password, now=None):
     # (spec PR-N3, Part 13) limits how far that can be exploited.
     locked_until = _as_utc(account.locked_until)
     if locked_until is not None and locked_until > now:
-        remaining = locked_until - now
-        minutes = max(1, int(remaining.total_seconds() // 60) + 1)
+        remaining_seconds = (locked_until - now).total_seconds()
+        # Round up to whole minutes, so 30 seconds left reads as "1 minute"
+        # and exactly 15 minutes left reads as "15 minutes", not 16.
+        minutes = max(1, math.ceil(remaining_seconds / 60))
         raise AccountLockedError(minutes)
 
     if not account.check_password(password):
