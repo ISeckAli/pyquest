@@ -1,0 +1,40 @@
+{#
+  Login page (spec FR02), rendered by auth.login.
+
+  A failed login shows one message above the form, never beside a single
+  field, so it cannot hint whether the email or the password was wrong.
+  role="alert" makes screen readers announce it as soon as it appears.
+
+  The form has no action attribute, so it submits back to the current URL,
+  including any ?next=... value. The route decides whether that value is a
+  safe place to return to after login.
+#}
+{% extends "base.html" %}
+{% from "_macros.html" import render_field %}
+
+{% block title %}Log In{% endblock %}
+
+{% block content %}
+<section class="auth-container">
+    <div class="auth-box">
+        <h1>Welcome back</h1>
+
+        {% if login_error %}
+            <p class="form-alert" role="alert">{{ login_error }}</p>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {{ form.hidden_tag() }}
+
+            {{ render_field(form.email) }}
+            {{ render_field(form.password) }}
+
+            {{ form.submit(class="btn btn-primary btn-block") }}
+        </form>
+
+        <p class="toggle-text">
+            New to PyQuest? <a href="{{ url_for('auth.register') }}">Create an account</a>
+        </p>
+    </div>
+</section>
+{% endblock %}

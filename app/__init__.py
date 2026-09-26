@@ -79,9 +79,13 @@ def _register_blueprints(app):
     import `db`; importing blueprints only once the app is being built keeps
     that chain from looping back on itself (a circular import).
     """
+    from app.auth import bp as auth_bp
+    from app.learner import bp as learner_bp
     from app.main import bp as main_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(learner_bp)
 
 
 def _require_production_settings(app):

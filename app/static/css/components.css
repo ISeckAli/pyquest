@@ -1,0 +1,218 @@
+/*
+  PyQuest interface components.
+
+  Reusable pieces used across many pages: flash messages, the
+  authentication box, form fields and their errors, and header buttons.
+  style.css holds the theme (colours, background, layout); this file holds
+  components built on that theme, so new components are added here without
+  touching the theme file.
+
+  Values follow the original PyQuest front end (glass panels, purple focus
+  glow, coral accents) and reuse the colour variables defined in style.css.
+*/
+
+/* ---------------------------------------------------------------------------
+   Flash messages
+   One-time notices shown after an action, such as "You have been logged out".
+   --------------------------------------------------------------------------- */
+.flash-stack {
+    max-width: 600px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+}
+
+.flash {
+    margin-bottom: 10px;
+    padding: 12px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-left-width: 4px;
+    border-radius: 10px;
+}
+
+.flash-success {
+    border-left-color: var(--blue);
+}
+
+.flash-info {
+    border-left-color: var(--purple);
+}
+
+.flash-error {
+    border-left-color: var(--coral);
+}
+
+/* ---------------------------------------------------------------------------
+   Authentication box (login and sign-up)
+   --------------------------------------------------------------------------- */
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 85vh;
+    padding: 40px 20px;
+}
+
+.auth-box {
+    width: 100%;
+    max-width: 500px;
+    padding: 40px;
+    background: var(--glass);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
+}
+
+.auth-box h1 {
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    text-align: center;
+    background-image: var(--gradient-headline);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+.toggle-text {
+    margin-top: 18px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.toggle-text a {
+    color: var(--blue);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.toggle-text a:hover {
+    text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   Form fields
+   --------------------------------------------------------------------------- */
+.input-group {
+    margin-bottom: 18px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    background: var(--glass);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* The purple border and glow replace the default focus outline, so keyboard
+   users can still see which field is active. */
+.input-group input:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+/* aria-invalid is set by the render_field macro when a field has an error,
+   so the same attribute drives both the styling and what screen readers
+   announce. */
+.input-group input[aria-invalid="true"] {
+    border-color: var(--coral);
+}
+
+.field-error {
+    margin-top: 6px;
+    color: #FF8FB3;
+    font-size: 0.85rem;
+}
+
+.field-hint {
+    margin: -10px 0 18px;
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+/* A message about the whole form rather than one field, such as a failed
+   login. */
+.form-alert {
+    margin-bottom: 18px;
+    padding: 12px 16px;
+    background: rgba(255, 61, 129, 0.1);
+    border: 1px solid var(--coral);
+    border-radius: 10px;
+}
+
+/* A full-width button, used as the main action at the bottom of a form. */
+.btn-block {
+    display: block;
+    width: 100%;
+    margin: 10px 0 0;
+}
+
+button:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+   Header navigation additions
+   --------------------------------------------------------------------------- */
+
+/* Log out is a POST form (see app/auth/routes.py), so it is a button styled
+   to look like the other header links. */
+.nav-form {
+    display: inline;
+    margin-left: 30px;
+}
+
+.nav-button {
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.nav-button:hover {
+    color: var(--coral);
+}
+
+/* The Sign up link stands out as the header's main call to action. */
+.nav-links a.nav-cta {
+    padding: 8px 18px;
+    border: 2px solid var(--blue);
+    border-radius: 30px;
+    color: var(--blue);
+    transition: background 0.3s, color 0.3s;
+}
+
+.nav-links a.nav-cta:hover {
+    background: var(--blue);
+    color: #000000;
+}
+
+/* ---------------------------------------------------------------------------
+   Small screens
+   --------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    .nav-form {
+        margin-left: 18px;
+    }
+
+    .auth-box {
+        padding: 28px 20px;
+    }
+}

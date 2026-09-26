@@ -4,9 +4,9 @@
   Extends the shared layout in base.html and fills in only the title and
   content blocks.
 
-  Both hero buttons currently scroll to the Features section. They are
-  pointed at the sign-up and challenge library pages once those features
-  exist, so the page never links to a route that is not built yet.
+  "Start Your Mission" leads to sign-up. "View Challenges" scrolls to the
+  Features section until the challenge library exists (Part 5), so the page
+  never links to a route that is not built yet.
 
   Emoji in the card headings are wrapped in aria-hidden spans so screen
   readers read the heading text only, rather than announcing each emoji by
@@ -24,7 +24,7 @@
         Complete missions, earn points, level up, and build real coding skills.
     </p>
     <div class="hero-actions">
-        <a class="btn btn-primary" href="#features">Start Your Mission</a>
+        <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Start Your Mission</a>
         <a class="btn btn-secondary" href="#features">View Challenges</a>
     </div>
 </section>

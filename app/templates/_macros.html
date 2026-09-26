@@ -1,0 +1,29 @@
+{#
+  Reusable template helpers. Import them in a page with:
+
+    {% from "_macros.html" import render_field %}
+
+  The leading underscore marks this file as a partial: it is imported by
+  other templates and never rendered as a page on its own.
+#}
+
+{#
+  Draws one form field: its label, the input, and any error messages.
+
+  When the field has errors, the input is marked aria-invalid and linked to
+  its error text with aria-describedby, so screen readers announce the error
+  together with the field (WCAG 2.1). Using one macro for every field keeps
+  all forms consistent.
+#}
+{% macro render_field(field) %}
+<div class="input-group">
+    {{ field.label }}
+    {% if field.errors %}
+        {% set error_id = field.id ~ "-error" %}
+        {{ field(**{"aria-invalid": "true", "aria-describedby": error_id}) }}
+        <p class="field-error" id="{{ error_id }}">{{ field.errors | join(" ") }}</p>
+    {% else %}
+        {{ field() }}
+    {% endif %}
+</div>
+{% endmacro %}

@@ -1,0 +1,36 @@
+{#
+  Learner dashboard, first version (spec FR14), rendered by
+  learner.dashboard.
+
+  Reuses the hero and card styles from the landing page. It is expanded
+  into the full progress dashboard (charts, badges, missions, and AI Coach
+  summaries) in Part 10.
+#}
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1 class="hero-title">Welcome, {{ current_user.display_name }}.</h1>
+    <p class="hero-lead">
+        Your quest starts here. Challenges arrive soon; every one you solve
+        earns XP toward your next level.
+    </p>
+
+    <div class="features">
+        <article class="card">
+            <h2><span aria-hidden="true">⭐</span> Level {{ profile.level }}</h2>
+            <p>Your current level. Solve challenges to climb higher.</p>
+        </article>
+        <article class="card">
+            <h2><span aria-hidden="true">⚡</span> {{ profile.total_xp }} XP</h2>
+            <p>Total experience points earned so far.</p>
+        </article>
+        <article class="card">
+            <h2><span aria-hidden="true">🔥</span> {{ profile.current_streak }}-day streak</h2>
+            <p>Solve a challenge each day to keep your streak alive.</p>
+        </article>
+    </div>
+</section>
+{% endblock %}
