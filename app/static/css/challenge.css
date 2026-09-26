@@ -1,0 +1,148 @@
+/*
+  Challenge page styles: the problem and the code workspace side by side
+  on wide screens, stacked on narrow ones. Loaded only by the challenge
+  page, through the extra_head block in base.html.
+*/
+
+.challenge-page-wide {
+    max-width: 1300px;
+}
+
+.challenge-layout {
+    display: grid;
+    gap: 24px;
+}
+
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* Monaco fills this box, so it needs a fixed height. */
+.editor-host {
+    height: 420px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+}
+
+.keyboard-tip {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+.run-status {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+/* Buttons stay visible but dimmed until the editor and Python are ready. */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* A text-style button for secondary actions such as "Reset code". */
+.btn-link {
+    padding: 0;
+    background: none;
+    border: none;
+    color: var(--blue);
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.btn-link:hover:not(:disabled) {
+    text-decoration: underline;
+}
+
+.btn-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+   Results
+   --------------------------------------------------------------------------- */
+.results {
+    margin-top: 16px;
+}
+
+.result-summary {
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.result-summary.is-pass {
+    color: var(--blue);
+}
+
+.result-summary.is-fail {
+    color: #FF8FB3;
+}
+
+/* Each result also says "passed" or "failed" in words, so colour is never
+   the only signal (WCAG 2.1). */
+.result-item {
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-left-width: 4px;
+    border-radius: 10px;
+}
+
+.result-item.is-pass {
+    border-left-color: var(--blue);
+}
+
+.result-item.is-fail {
+    border-left-color: var(--coral);
+}
+
+.result-item h3 {
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+}
+
+.result-label {
+    margin: 8px 0 4px;
+    font-size: 0.8rem;
+    opacity: 0.75;
+}
+
+.result-note {
+    margin: 10px 0;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.xp-banner {
+    margin: 10px 0;
+    padding: 10px 14px;
+    background: rgba(255, 215, 90, 0.1);
+    border: 1px solid rgba(255, 215, 90, 0.6);
+    border-radius: 10px;
+    color: #FFD75A;
+    font-weight: 600;
+}
+
+.solve-cta a {
+    color: var(--blue);
+    font-weight: 600;
+}
+
+@media (min-width: 1100px) {
+    .challenge-layout {
+        grid-template-columns: 5fr 6fr;
+        align-items: start;
+    }
+}

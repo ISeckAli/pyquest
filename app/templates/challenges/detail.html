@@ -1,6 +1,11 @@
 {#
   A challenge page, rendered by challenges.detail, and by the instructor
-  preview (Part 5, Batch 3) with preview=True.
+  preview with preview=True.
+
+  Signed-in learners get the code workspace (spec FR05). Its settings reach
+  the JavaScript through a JSON script block written with tojson, which
+  escapes "<", so starter code containing "</script>" cannot break out of
+  the block. Visitors see an invitation to log in instead.
 
   Only visible test cases are shown as examples. Hidden tests and the
   reference solution are never used in this template, so they cannot leak
@@ -14,8 +19,16 @@
 
 {% block title %}{{ challenge.title }}{% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/challenge.css') }}">
+    {% if can_solve %}
+        {# Read by challenge.js and sent as the X-CSRFToken header. #}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% endif %}
+{% endblock %}
+
 {% block content %}
-<section class="page-section challenge-page">
+<section class="page-section challenge-page {% if can_solve %}challenge-page-wide{% endif %}">
     {% if preview %}
         <p class="notice" role="status">
             Preview: this is exactly what learners will see.
@@ -36,30 +49,63 @@
         <span class="pill">{{ challenge.topic.name }}</span>
     </div>
 
-    <div class="panel">
-        <h2>The problem</h2>
-        <div class="problem-text">{{ challenge.description }}</div>
-    </div>
-
-    <div class="panel">
-        <h2>Examples</h2>
-        {% for test in challenge.visible_tests %}
-            <div class="example">
-                <div>
-                    <h3>Input</h3>
-                    <pre class="code-block">{{ test.input_data or "(no input)" }}</pre>
-                </div>
-                <div>
-                    <h3>Expected output</h3>
-                    <pre class="code-block">{{ test.expected_output }}</pre>
-                </div>
+    <div class="{% if can_solve %}challenge-layout{% endif %}">
+        <div>
+            <div class="panel">
+                <h2>The problem</h2>
+                <div class="problem-text">{{ challenge.description }}</div>
             </div>
-        {% endfor %}
-    </div>
 
-    <p class="notice">
-        The in-browser code editor is on its way. Soon you will write, run,
-        and submit your solution right here.
-    </p>
+            <div class="panel">
+                <h2>Examples</h2>
+                {% for test in challenge.visible_tests %}
+                    <div class="example">
+                        <div>
+                            <h3>Input</h3>
+                            <pre class="code-block">{{ test.input_data or "(no input)" }}</pre>
+                        </div>
+                        <div>
+                            <h3>Expected output</h3>
+                            <pre class="code-block">{{ test.expected_output }}</pre>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            {% if can_solve %}
+                <div class="panel">
+                    <h2>Your solution</h2>
+                    <div class="editor-toolbar">
+                        <button type="button" id="run-button" class="btn btn-secondary btn-small" disabled>Run examples</button>
+                        <button type="button" id="submit-button" class="btn btn-primary btn-small" disabled>Submit</button>
+                        <button type="button" id="reset-button" class="btn-link" disabled>Reset code</button>
+                    </div>
+                    <div id="editor" class="editor-host"></div>
+                    <p class="keyboard-tip">Tip: press Ctrl+M to let the Tab key move focus out of the editor.</p>
+                    <p id="run-status" class="run-status" role="status">Loading the editor and Python…</p>
+                    <div id="results" class="results" aria-live="polite"></div>
+                </div>
+
+                <script type="application/json" id="challenge-data">{{ editor_config | tojson }}</script>
+                <script src="{{ monaco_loader }}"></script>
+                <script src="{{ url_for('static', filename='js/challenge.js') }}"></script>
+            {% elif preview %}
+                <p class="notice">
+                    Learners solve the challenge here with the code editor. It is not
+                    available in preview.
+                </p>
+            {% elif current_user.is_authenticated %}
+                <p class="notice">Solving challenges and earning XP requires a learner account.</p>
+            {% else %}
+                <p class="notice solve-cta">
+                    <a href="{{ url_for('auth.login', next=request.path) }}">Log in</a>
+                    or <a href="{{ url_for('auth.register') }}">create a free account</a>
+                    to solve this challenge and earn XP.
+                </p>
+            {% endif %}
+        </div>
+    </div>
 </section>
 {% endblock %}
