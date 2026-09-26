@@ -1,5 +1,6 @@
 """
-JSON endpoints for running and submitting challenges (spec FR05, FR06).
+JSON endpoints for running, saving, and submitting challenges (spec FR05,
+FR06).
 """
 
 from functools import wraps
@@ -11,6 +12,7 @@ from app.api import bp
 from app.models import RoleType
 from app.services.challenges import get_published
 from app.services.grading import GradingError, grade_submission, runnable_tests
+from app.services.workspace import WorkspaceError, save_code
 
 
 def api_role_required(*role_types):
@@ -39,6 +41,16 @@ def _not_found():
     return jsonify(error="Challenge not found."), 404
 
 
+def _json_payload():
+    """The request body as a dictionary, or None if it is not a JSON object.
+
+    silent=True returns None instead of raising for a body that is not
+    valid JSON, so every malformed request gets the same clear 400.
+    """
+    payload = request.get_json(silent=True)
+    return payload if isinstance(payload, dict) else None
+
+
 @bp.route("/challenges/<slug>/tests")
 @api_role_required(RoleType.LEARNER)
 def challenge_tests(slug):
@@ -53,6 +65,30 @@ def challenge_tests(slug):
     return jsonify(runnable_tests(challenge))
 
 
+@bp.route("/challenges/<slug>/code", methods=["PUT"])
+@api_role_required(RoleType.LEARNER)
+def save_workspace_code(slug):
+    """Save the learner's working copy of their code (spec FR05).
+
+    PUT, because each save replaces the previous copy rather than adding a
+    new record.
+    """
+    challenge = get_published(slug)
+    if challenge is None:
+        return _not_found()
+
+    payload = _json_payload()
+    if payload is None:
+        return jsonify(error="Send the code as JSON."), 400
+
+    try:
+        save_code(current_user, challenge, payload.get("code"))
+    except WorkspaceError as error:
+        return jsonify(error=str(error)), 400
+
+    return jsonify(saved=True)
+
+
 @bp.route("/challenges/<slug>/submissions", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
 def submit(slug):
@@ -61,10 +97,8 @@ def submit(slug):
     if challenge is None:
         return _not_found()
 
-    # silent=True returns None instead of raising for a body that is not
-    # valid JSON, so every malformed request gets the same clear 400.
-    payload = request.get_json(silent=True)
-    if not isinstance(payload, dict):
+    payload = _json_payload()
+    if payload is None:
         return jsonify(error="Send the submission as JSON."), 400
 
     try:

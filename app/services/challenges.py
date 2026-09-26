@@ -6,20 +6,21 @@ fallback hints, the publishing lifecycle, and the learner library
 Lifecycle (SRS Part C, Figure 7):
 
     Draft --publish--> Published --unpublish--> Unpublished --publish--> ...
-    Draft or Unpublished --delete--> removed
+    Draft or Unpublished --delete--> removed (only if never attempted)
 
 Publishing requires enough visible and hidden test cases and a reference
 solution. The spec also requires the reference solution to pass every
 test. Under decision DR-03 the server never runs code, so that check runs
-in the instructor's browser (Part 6); this service checks everything that
-can be checked without running code.
+in the instructor's browser; this service checks everything that can be
+checked without running code.
 """
 
 import re
+import textwrap
 from datetime import UTC, datetime
 
 from flask import current_app
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from app.extensions import db
 from app.models import (
@@ -28,6 +29,8 @@ from app.models import (
     Difficulty,
     FallbackHint,
     RoleType,
+    SavedCode,
+    Submission,
     TestCase,
     Topic,
 )
@@ -91,6 +94,22 @@ def normalise_newlines(text):
     outputs compare correctly against real program output later.
     """
     return (text or "").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def clean_code(text):
+    """Tidy pasted code: normal line endings, and no indentation shared by
+    every line.
+
+    Code copied from a web page or document often arrives with every line
+    indented. Python rejects that ("unexpected indent"), so learners would
+    start with broken starter code. textwrap.dedent removes only the
+    indentation that all lines share, so relative indentation (such as the
+    inside of a loop) is kept. Blank lines at the start and end are dropped.
+
+    Used for starter code and reference solutions only, never for expected
+    outputs, where leading spaces can be part of the correct answer.
+    """
+    return textwrap.dedent(normalise_newlines(text)).strip("\n")
 
 
 # ---------------------------------------------------------------------------
@@ -187,8 +206,8 @@ def create_challenge(
         topic=topic,
         difficulty=difficulty,
         xp_value=xp_value,
-        starter_code=normalise_newlines(starter_code),
-        reference_solution=normalise_newlines(reference_solution),
+        starter_code=clean_code(starter_code),
+        reference_solution=clean_code(reference_solution),
         status=ChallengeStatus.DRAFT,
         author_id=author.party_id if author is not None else None,
     )
@@ -209,7 +228,7 @@ def update_challenge(
     title, description, difficulty, xp_value = _clean_details(
         title, description, topic, difficulty, xp_value
     )
-    reference_solution = normalise_newlines(reference_solution)
+    reference_solution = clean_code(reference_solution)
 
     if challenge.is_published and not reference_solution.strip():
         raise ChallengeError(
@@ -221,7 +240,7 @@ def update_challenge(
     challenge.topic = topic
     challenge.difficulty = difficulty
     challenge.xp_value = xp_value
-    challenge.starter_code = normalise_newlines(starter_code)
+    challenge.starter_code = clean_code(starter_code)
     challenge.reference_solution = reference_solution
     db.session.commit()
 
@@ -354,11 +373,25 @@ def delete_challenge(challenge):
     """Delete a Draft or Unpublished challenge with its tests and hints.
 
     A published challenge must be unpublished first (state diagram), so a
-    challenge learners can see never vanishes in a single step.
+    challenge learners can see never vanishes in a single step. A challenge
+    that learners have attempted can never be deleted, only unpublished, so
+    their submission history and the XP it records stay intact.
     """
     if challenge.is_published:
         raise ChallengeError("Unpublish this challenge before deleting it.")
 
+    attempted = db.session.scalar(
+        select(Submission.id).where(Submission.challenge_id == challenge.id).limit(1)
+    )
+    if attempted is not None:
+        raise ChallengeError(
+            "Learners have attempted this challenge, so it can be unpublished but "
+            "not deleted. This keeps their submission history intact."
+        )
+
+    # Working copies saved while it was published have no value once the
+    # challenge is gone.
+    db.session.execute(delete(SavedCode).where(SavedCode.challenge_id == challenge.id))
     db.session.delete(challenge)
     db.session.commit()
 

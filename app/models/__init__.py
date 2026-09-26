@@ -8,7 +8,8 @@ table with db.create_all().
 
 Models are split into modules by feature area, matching the blueprint
 structure: identity (people, accounts, roles), challenge (topics,
-challenges, test cases, fallback hints), and submission (graded attempts).
+challenges, test cases, fallback hints), submission (graded attempts), and
+saved_code (each learner's working copy of their code).
 """
 
 from app.models.challenge import (
@@ -27,6 +28,7 @@ from app.models.identity import (
     RoleType,
     UserAccount,
 )
+from app.models.saved_code import SavedCode
 from app.models.submission import Submission, SubmissionStatus
 
 # The public names of this package. Listing them documents what other code
@@ -41,6 +43,7 @@ __all__ = [
     "Person",
     "Role",
     "RoleType",
+    "SavedCode",
     "Submission",
     "SubmissionStatus",
     "TestCase",

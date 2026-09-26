@@ -11,6 +11,7 @@ from flask_login import current_user
 from app.challenges import bp
 from app.models import Difficulty, RoleType
 from app.services.challenges import get_published, list_published, list_topics
+from app.services.workspace import get_saved_code
 
 # The Monaco editor is loaded from a free public CDN, pinned to an exact
 # version so every learner gets the same editor (spec DR-11: $0 hosting).
@@ -72,10 +73,15 @@ def detail(slug):
 
     editor_config = None
     if can_solve:
+        saved = get_saved_code(current_user, challenge)
         editor_config = {
+            # The editor opens with the learner's saved work when there is
+            # any; "Reset code" goes back to the starter code.
+            "initialCode": saved if saved is not None else challenge.starter_code,
             "starterCode": challenge.starter_code,
             "testsUrl": url_for("api.challenge_tests", slug=challenge.slug),
             "submitUrl": url_for("api.submit", slug=challenge.slug),
+            "saveUrl": url_for("api.save_workspace_code", slug=challenge.slug),
             "workerUrl": url_for("static", filename="js/python-worker.js"),
             "monacoBase": MONACO_BASE,
         }
