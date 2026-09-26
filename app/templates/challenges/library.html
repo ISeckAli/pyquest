@@ -1,0 +1,73 @@
+{#
+  Challenge library (spec FR04, PR-L1), rendered by challenges.library.
+
+  The filter form uses GET, so the chosen filters appear in the page
+  address and can be bookmarked or shared. GET forms only read data, so
+  they need no CSRF token. Challenges appear under topic headings in
+  learning-path order.
+#}
+{% extends "base.html" %}
+
+{% block title %}Challenges{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title">Challenge Library</h1>
+    <p class="page-intro">
+        Work through the topics in order, or search and filter to find a challenge.
+    </p>
+
+    <form class="filter-bar" method="get" action="{{ url_for('challenges.library') }}" role="search">
+        <div class="input-group">
+            <label for="q">Search</label>
+            <input id="q" name="q" type="search" value="{{ filters.q }}" placeholder="Challenge title">
+        </div>
+        <div class="input-group">
+            <label for="topic">Topic</label>
+            <select id="topic" name="topic">
+                <option value="">All topics</option>
+                {% for topic in topics %}
+                    <option value="{{ topic.slug }}" {% if topic.slug == filters.topic %}selected{% endif %}>{{ topic.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="difficulty">Difficulty</label>
+            <select id="difficulty" name="difficulty">
+                <option value="">All levels</option>
+                {% for level in difficulties %}
+                    <option value="{{ level.value }}" {% if level.value == filters.difficulty %}selected{% endif %}>{{ level.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary btn-small">Apply</button>
+            <a class="btn btn-secondary btn-small" href="{{ url_for('challenges.library') }}">Clear</a>
+        </div>
+    </form>
+
+    {% if groups %}
+        {% for topic, topic_challenges in groups %}
+            <section class="topic-section" id="topic-{{ topic.slug }}">
+                <h2 class="topic-heading">{{ topic.name }}</h2>
+                {% if topic.description %}
+                    <p class="topic-description">{{ topic.description }}</p>
+                {% endif %}
+                <div class="challenge-grid">
+                    {% for challenge in topic_challenges %}
+                        <a class="challenge-card" href="{{ url_for('challenges.detail', slug=challenge.slug) }}">
+                            <h3>{{ challenge.title }}</h3>
+                            <div class="challenge-meta">
+                                <span class="pill pill-{{ challenge.difficulty.value }}">{{ challenge.difficulty.label }}</span>
+                                <span class="pill pill-xp">{{ challenge.xp_value }} XP</span>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        {% endfor %}
+    {% else %}
+        <p class="empty-state">No challenges match these filters yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

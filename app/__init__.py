@@ -68,6 +68,11 @@ def create_app(config_name=None):
 
     _register_blueprints(app)
 
+    # Command-line tools such as `flask --app app grant-role`.
+    from app.cli import register_commands
+
+    register_commands(app)
+
     return app
 
 
@@ -80,12 +85,14 @@ def _register_blueprints(app):
     that chain from looping back on itself (a circular import).
     """
     from app.auth import bp as auth_bp
+    from app.challenges import bp as challenges_bp
     from app.learner import bp as learner_bp
     from app.main import bp as main_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(learner_bp)
+    app.register_blueprint(challenges_bp)
 
 
 def _require_production_settings(app):

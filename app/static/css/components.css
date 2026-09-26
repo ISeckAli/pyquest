@@ -1,19 +1,18 @@
 /*
   PyQuest interface components.
 
-  Reusable pieces used across many pages: flash messages, the
-  authentication box, form fields and their errors, settings layout, and
-  header buttons. style.css holds the theme (colours, background, layout);
-  this file holds components built on that theme, so new components are
-  added here without touching the theme file.
+  Reusable pieces used across many pages: flash messages, panels, form
+  fields, page layout, the challenge library, and header buttons. style.css
+  holds the theme (colours, background, layout); this file holds components
+  built on that theme, so new components are added here without touching
+  the theme file.
 
   Values follow the original PyQuest front end (glass panels, purple focus
   glow, coral accents) and reuse the colour variables defined in style.css.
 */
 
 /* ---------------------------------------------------------------------------
-   Flash messages
-   One-time notices shown after an action, such as "You have been logged out".
+   Flash messages and notices
    --------------------------------------------------------------------------- */
 .flash-stack {
     max-width: 600px;
@@ -21,7 +20,8 @@
     padding: 0 20px;
 }
 
-.flash {
+.flash,
+.notice {
     margin-bottom: 10px;
     padding: 12px 16px;
     background: var(--glass);
@@ -34,7 +34,8 @@
     border-left-color: var(--blue);
 }
 
-.flash-info {
+.flash-info,
+.notice {
     border-left-color: var(--purple);
 }
 
@@ -53,15 +54,25 @@
     padding: 40px 20px;
 }
 
-.auth-box {
+.auth-box,
+.panel {
     width: 100%;
-    max-width: 500px;
-    padding: 40px;
     background: var(--glass);
     backdrop-filter: blur(15px);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
     box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
+}
+
+.auth-box {
+    max-width: 500px;
+    padding: 40px;
+}
+
+/* A full-width content panel, such as "The problem" on a challenge page. */
+.panel {
+    margin-bottom: 24px;
+    padding: 30px;
 }
 
 /* Gradient text for page and panel titles, matching the landing page. */
@@ -80,11 +91,18 @@
     text-align: center;
 }
 
-/* Section headings inside a panel, such as "Profile" on the settings page. */
-.auth-box h2 {
+/* Section headings inside a panel, such as "Profile" or "Examples". */
+.auth-box h2,
+.panel h2 {
     margin-bottom: 20px;
     font-size: 1.3rem;
     color: var(--blue);
+}
+
+.panel h3 {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
 .toggle-text {
@@ -104,8 +122,11 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Settings page layout
+   Page layout
    --------------------------------------------------------------------------- */
+
+/* A standard content page: centred, with comfortable side margins. */
+.page-section,
 .settings-page {
     max-width: 1060px;
     margin: 0 auto;
@@ -116,6 +137,39 @@
     margin-bottom: 30px;
     font-size: 2.2rem;
     text-align: center;
+}
+
+.page-title-left {
+    margin-bottom: 12px;
+    text-align: left;
+}
+
+.page-intro {
+    max-width: 640px;
+    margin: -15px auto 30px;
+    text-align: center;
+    opacity: 0.85;
+}
+
+.breadcrumb {
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.breadcrumb a {
+    color: var(--blue);
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    opacity: 0.7;
 }
 
 /* One column on phones; two side by side once there is room. */
@@ -140,7 +194,8 @@
 }
 
 .input-group input,
-.input-group select {
+.input-group select,
+.input-group textarea {
     width: 100%;
     padding: 12px;
     background: var(--glass);
@@ -152,10 +207,17 @@
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.input-group textarea {
+    min-height: 120px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
 /* The purple border and glow replace the default focus outline, so keyboard
    users can still see which field is active. */
 .input-group input:focus,
-.input-group select:focus {
+.input-group select:focus,
+.input-group textarea:focus {
     border-color: var(--purple);
     box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
 }
@@ -198,7 +260,8 @@
    so the same attribute drives both the styling and what screen readers
    announce. */
 .input-group input[aria-invalid="true"],
-.input-group select[aria-invalid="true"] {
+.input-group select[aria-invalid="true"],
+.input-group textarea[aria-invalid="true"] {
     border-color: var(--coral);
 }
 
@@ -251,10 +314,165 @@
     margin: 10px 0 0;
 }
 
+/* A compact button for toolbars and filter bars. */
+.btn-small {
+    margin: 0;
+    padding: 10px 22px;
+    font-size: 0.95rem;
+}
+
 button:focus-visible,
 .checkbox-group input:focus-visible {
     outline: 2px solid var(--blue);
     outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+   Challenge library
+   --------------------------------------------------------------------------- */
+
+/* Search and filters on one line where there is room, wrapping on phones. */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 36px;
+    padding: 20px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+}
+
+.filter-bar .input-group {
+    flex: 1 1 200px;
+    margin-bottom: 0;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.topic-section {
+    margin-bottom: 40px;
+}
+
+.topic-heading {
+    margin-bottom: 6px;
+    font-size: 1.5rem;
+    color: var(--blue);
+}
+
+.topic-description {
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+.challenge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    margin-top: 16px;
+}
+
+/* The whole card is one link, so it is easy to click on any device. */
+.challenge-card {
+    display: block;
+    padding: 24px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    color: var(--text);
+    text-decoration: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.challenge-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.4);
+}
+
+.challenge-card h3 {
+    margin-bottom: 14px;
+    font-size: 1.1rem;
+}
+
+.challenge-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.challenge-card .challenge-meta {
+    margin-bottom: 0;
+}
+
+/* Small labels such as a difficulty or an XP value. Each difficulty has its
+   own colour so the level can be recognised at a glance; the text still
+   names it, so colour is never the only signal (WCAG 2.1). */
+.pill {
+    display: inline-block;
+    padding: 3px 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.pill-beginner {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.pill-intermediate {
+    border-color: var(--purple);
+    color: #B79CFF;
+}
+
+.pill-advanced {
+    border-color: var(--coral);
+    color: #FF8FB3;
+}
+
+.pill-xp {
+    border-color: rgba(255, 215, 90, 0.6);
+    color: #FFD75A;
+}
+
+/* ---------------------------------------------------------------------------
+   Challenge page
+   --------------------------------------------------------------------------- */
+.challenge-page {
+    max-width: 900px;
+}
+
+/* Keeps the author's line breaks in the problem description. */
+.problem-text {
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+/* Input and expected output side by side where there is room. */
+.example {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.example:last-child {
+    margin-bottom: 0;
+}
+
+.code-block {
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    font-family: Consolas, "Cascadia Code", "Courier New", monospace;
+    font-size: 0.95rem;
+    white-space: pre;
+    overflow-x: auto;
 }
 
 /* ---------------------------------------------------------------------------
@@ -299,6 +517,12 @@ button:focus-visible,
 /* ---------------------------------------------------------------------------
    Screen size adjustments
    --------------------------------------------------------------------------- */
+@media (min-width: 700px) {
+    .example {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
 @media (min-width: 900px) {
     .settings-grid {
         grid-template-columns: 1fr 1fr;
@@ -311,7 +535,8 @@ button:focus-visible,
         margin-left: 18px;
     }
 
-    .auth-box {
+    .auth-box,
+    .panel {
         padding: 28px 20px;
     }
 }

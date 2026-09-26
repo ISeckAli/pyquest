@@ -1,0 +1,65 @@
+{#
+  A challenge page, rendered by challenges.detail, and by the instructor
+  preview (Part 5, Batch 3) with preview=True.
+
+  Only visible test cases are shown as examples. Hidden tests and the
+  reference solution are never used in this template, so they cannot leak
+  into the page (spec FR06, section 5.9).
+
+  The description keeps the author's line breaks (white-space: pre-wrap)
+  and is escaped by Jinja2. Markdown formatting, which needs a sanitiser to
+  be safe, is added in the hardening part.
+#}
+{% extends "base.html" %}
+
+{% block title %}{{ challenge.title }}{% endblock %}
+
+{% block content %}
+<section class="page-section challenge-page">
+    {% if preview %}
+        <p class="notice" role="status">
+            Preview: this is exactly what learners will see.
+            Current status: {{ challenge.status.value | title }}.
+        </p>
+    {% endif %}
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('challenges.library') }}">Challenge Library</a>
+        <span aria-hidden="true">/</span>
+        {{ challenge.topic.name }}
+    </nav>
+
+    <h1 class="page-title page-title-left">{{ challenge.title }}</h1>
+    <div class="challenge-meta">
+        <span class="pill pill-{{ challenge.difficulty.value }}">{{ challenge.difficulty.label }}</span>
+        <span class="pill pill-xp">{{ challenge.xp_value }} XP</span>
+        <span class="pill">{{ challenge.topic.name }}</span>
+    </div>
+
+    <div class="panel">
+        <h2>The problem</h2>
+        <div class="problem-text">{{ challenge.description }}</div>
+    </div>
+
+    <div class="panel">
+        <h2>Examples</h2>
+        {% for test in challenge.visible_tests %}
+            <div class="example">
+                <div>
+                    <h3>Input</h3>
+                    <pre class="code-block">{{ test.input_data or "(no input)" }}</pre>
+                </div>
+                <div>
+                    <h3>Expected output</h3>
+                    <pre class="code-block">{{ test.expected_output }}</pre>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <p class="notice">
+        The in-browser code editor is on its way. Soon you will write, run,
+        and submit your solution right here.
+    </p>
+</section>
+{% endblock %}

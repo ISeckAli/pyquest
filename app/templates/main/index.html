@@ -2,11 +2,8 @@
   Landing page, rendered by the main blueprint's index view.
 
   Extends the shared layout in base.html and fills in only the title and
-  content blocks.
-
-  "Start Your Mission" leads to sign-up. "View Challenges" scrolls to the
-  Features section until the challenge library exists (Part 5), so the page
-  never links to a route that is not built yet.
+  content blocks. "Start Your Mission" leads to sign-up and "View
+  Challenges" to the public challenge library.
 
   Emoji in the card headings are wrapped in aria-hidden spans so screen
   readers read the heading text only, rather than announcing each emoji by
@@ -25,7 +22,7 @@
     </p>
     <div class="hero-actions">
         <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Start Your Mission</a>
-        <a class="btn btn-secondary" href="#features">View Challenges</a>
+        <a class="btn btn-secondary" href="{{ url_for('challenges.library') }}">View Challenges</a>
     </div>
 </section>
 
