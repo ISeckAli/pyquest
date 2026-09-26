@@ -1,12 +1,15 @@
 /*
-  Challenge workspace: the code editor, running Python in the browser, and
-  submitting results for grading (spec FR05, FR06, decision DR-03).
+  Challenge workspace: the code editor, running Python in the browser,
+  saving work, and submitting results for grading (spec FR05, FR06,
+  decision DR-03).
 
   - Run examples: runs the learner's code on the visible tests only and
     compares the output here. Nothing is sent to the server; no XP.
   - Submit: runs every test (hidden ones included), sends the outputs to
     the server, and shows its verdict. The server holds the hidden expected
     outputs, decides pass or fail, and awards XP.
+  - Autosave: the code is saved shortly after the learner stops typing, so
+    leaving the page and coming back never loses work.
 
   All results are added to the page with textContent, never as HTML, so
   anything a program prints is displayed as plain text and can never be
@@ -18,6 +21,10 @@
   const TIME_LIMIT_MS = 10000; // Spec FR06 and SRS UC-02 exception 4e.
   const OUTPUT_LIMIT = 65536; // 64 KB of output per test.
   const MAX_REPORTED_MS = 60000; // Matches the server's accepted range.
+
+  // Wait this long after the last keystroke before saving. Saving on every
+  // keystroke would send a request per character typed.
+  const SAVE_DELAY_MS = 1500;
 
   const configElement = document.getElementById("challenge-data");
   if (!configElement) {
@@ -33,12 +40,21 @@
   const statusElement = document.getElementById("run-status");
   const resultsElement = document.getElementById("results");
 
+  // Shows the autosave state beside the buttons. Created here rather than
+  // in the template because only this script updates it.
+  const saveStatusElement = document.createElement("span");
+  saveStatusElement.className = "keyboard-tip";
+  saveStatusElement.setAttribute("aria-live", "polite");
+  resetButton.after(saveStatusElement);
+
   let editor = null;
   let tests = null;
   let worker = null;
   let workerReady = false;
   let pendingRun = null;
   let busy = false;
+  let saveTimer = null;
+  let lastSavedCode = config.initialCode;
 
   // -------------------------------------------------------------------------
   // Status and buttons
@@ -46,6 +62,10 @@
 
   function setStatus(message) {
     statusElement.textContent = message;
+  }
+
+  function setSaveStatus(message) {
+    saveStatusElement.textContent = message;
   }
 
   function updateButtons() {
@@ -143,7 +163,8 @@
       ["vs/editor/editor.main"],
       () => {
         editor = window.monaco.editor.create(document.getElementById("editor"), {
-          value: config.starterCode,
+          // The learner's saved work if there is any, otherwise the starter code.
+          value: config.initialCode,
           language: "python",
           theme: "vs-dark",
           automaticLayout: true,
@@ -154,6 +175,7 @@
           scrollBeyondLastLine: false,
           ariaLabel: "Python code editor",
         });
+        editor.onDidChangeModelContent(scheduleSave);
         announceIfReady();
         updateButtons();
       },
@@ -184,6 +206,62 @@
       return `Request failed (${response.status}).`;
     }
   }
+
+  // -------------------------------------------------------------------------
+  // Autosave
+  // -------------------------------------------------------------------------
+
+  function saveRequest(code, keepalive) {
+    return fetch(config.saveUrl, {
+      method: "PUT",
+      credentials: "same-origin",
+      // keepalive lets the request finish even while the page is closing.
+      keepalive,
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-CSRFToken": csrfToken,
+      },
+      body: JSON.stringify({ code }),
+    });
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+    setSaveStatus("Unsaved changes");
+    saveTimer = setTimeout(saveNow, SAVE_DELAY_MS);
+  }
+
+  async function saveNow() {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+
+    const code = editor.getValue();
+    if (code === lastSavedCode) {
+      setSaveStatus("All changes saved");
+      return;
+    }
+
+    setSaveStatus("Saving…");
+    try {
+      const response = await saveRequest(code, false);
+      if (!response.ok) {
+        throw new Error(await errorMessage(response));
+      }
+      lastSavedCode = code;
+      // The learner may have kept typing while the save was in flight.
+      setSaveStatus(editor.getValue() === code ? "All changes saved" : "Unsaved changes");
+    } catch {
+      setSaveStatus("Could not save. Your code is still here; keep this tab open and try again.");
+    }
+  }
+
+  // Sends any unsaved change as the learner leaves or closes the page.
+  window.addEventListener("pagehide", () => {
+    if (editor !== null && editor.getValue() !== lastSavedCode) {
+      saveRequest(editor.getValue(), true);
+    }
+  });
 
   // -------------------------------------------------------------------------
   // Run and Submit
@@ -251,6 +329,9 @@
 
   function submitSolution() {
     return withBusy("Running all tests…", async () => {
+      // Save first, so the working copy always matches what was submitted.
+      await saveNow();
+
       const run = await runInWorker(tests);
       setStatus("Grading…");
 
@@ -290,6 +371,7 @@
 
   function resetCode() {
     if (window.confirm("Replace your code with the starter code?")) {
+      // Setting the value counts as a change, so the reset is autosaved too.
       editor.setValue(config.starterCode);
       resultsElement.replaceChildren();
     }
