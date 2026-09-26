@@ -7,9 +7,8 @@ what lets Flask-Migrate detect schema changes and lets tests create every
 table with db.create_all().
 
 Models are split into modules by feature area, matching the blueprint
-structure: identity (people, accounts, roles) and challenge (topics,
-challenges, test cases, fallback hints). Submissions and the AI Coach
-follow in later parts.
+structure: identity (people, accounts, roles), challenge (topics,
+challenges, test cases, fallback hints), and submission (graded attempts).
 """
 
 from app.models.challenge import (
@@ -28,6 +27,7 @@ from app.models.identity import (
     RoleType,
     UserAccount,
 )
+from app.models.submission import Submission, SubmissionStatus
 
 # The public names of this package. Listing them documents what other code
 # is expected to import, and tells linters these imports are intentional.
@@ -41,6 +41,8 @@ __all__ = [
     "Person",
     "Role",
     "RoleType",
+    "Submission",
+    "SubmissionStatus",
     "TestCase",
     "Topic",
     "UserAccount",
