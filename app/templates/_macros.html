@@ -1,7 +1,7 @@
 {#
   Reusable template helpers. Import them in a page with:
 
-    {% from "_macros.html" import render_field %}
+    {% from "_macros.html" import render_field, render_checkbox %}
 
   The leading underscore marks this file as a partial: it is imported by
   other templates and never rendered as a page on its own.
@@ -13,7 +13,7 @@
   When the field has errors, the input is marked aria-invalid and linked to
   its error text with aria-describedby, so screen readers announce the error
   together with the field (WCAG 2.1). Using one macro for every field keeps
-  all forms consistent.
+  all forms consistent. Works for text, email, password, and select fields.
 #}
 {% macro render_field(field) %}
 <div class="input-group">
@@ -25,5 +25,17 @@
     {% else %}
         {{ field() }}
     {% endif %}
+</div>
+{% endmacro %}
+
+{#
+  Draws a checkbox with its label beside it. The label is linked to the box
+  (through the field's id), so clicking the text also ticks the box and
+  screen readers read the two together.
+#}
+{% macro render_checkbox(field) %}
+<div class="checkbox-group">
+    {{ field() }}
+    {{ field.label }}
 </div>
 {% endmacro %}

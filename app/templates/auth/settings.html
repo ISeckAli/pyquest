@@ -1,0 +1,58 @@
+{#
+  Account settings page (spec PR-A5), rendered by auth.settings.
+
+  Two independent forms, each in its own panel with its own button. Each
+  form's fields carry a prefix (profile-, password-), so the route can tell
+  which button was pressed and process only that form.
+
+  Changing the email address is not offered yet: it needs email
+  verification, which arrives in release R2 (spec PR-A1).
+#}
+{% extends "base.html" %}
+{% from "_macros.html" import render_field, render_checkbox %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<section class="settings-page">
+    <h1 class="page-title">Account settings</h1>
+
+    <div class="settings-grid">
+        <div class="auth-box">
+            <h2>Profile</h2>
+            <p class="field-hint">Signed in as {{ current_user.party.email }}</p>
+
+            <form method="post" novalidate>
+                {{ profile_form.hidden_tag() }}
+
+                {{ render_field(profile_form.display_name) }}
+                {{ render_field(profile_form.timezone) }}
+                <p class="field-hint">
+                    Decides when your day starts for streaks and daily missions.
+                </p>
+                {{ render_checkbox(profile_form.leaderboard_visible) }}
+
+                {{ profile_form.submit(class="btn btn-primary btn-block") }}
+            </form>
+        </div>
+
+        <div class="auth-box">
+            <h2>Password</h2>
+
+            <form method="post" novalidate>
+                {{ password_form.hidden_tag() }}
+
+                {{ render_field(password_form.current_password) }}
+                {{ render_field(password_form.new_password) }}
+                <p class="field-hint">
+                    At least {{ config.PASSWORD_MIN_LENGTH }} characters, not a common
+                    password, and different from your current one.
+                </p>
+                {{ render_field(password_form.confirm_new_password) }}
+
+                {{ password_form.submit(class="btn btn-primary btn-block") }}
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

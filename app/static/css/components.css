@@ -2,10 +2,10 @@
   PyQuest interface components.
 
   Reusable pieces used across many pages: flash messages, the
-  authentication box, form fields and their errors, and header buttons.
-  style.css holds the theme (colours, background, layout); this file holds
-  components built on that theme, so new components are added here without
-  touching the theme file.
+  authentication box, form fields and their errors, settings layout, and
+  header buttons. style.css holds the theme (colours, background, layout);
+  this file holds components built on that theme, so new components are
+  added here without touching the theme file.
 
   Values follow the original PyQuest front end (glass panels, purple focus
   glow, coral accents) and reuse the colour variables defined in style.css.
@@ -43,7 +43,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Authentication box (login and sign-up)
+   Panels: the authentication box, also used for settings sections
    --------------------------------------------------------------------------- */
 .auth-container {
     display: flex;
@@ -64,15 +64,27 @@
     box-shadow: 0 0 25px rgba(139, 92, 246, 0.3);
 }
 
-.auth-box h1 {
-    margin-bottom: 25px;
-    font-size: 1.8rem;
-    text-align: center;
+/* Gradient text for page and panel titles, matching the landing page. */
+.auth-box h1,
+.page-title {
     background-image: var(--gradient-headline);
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
+}
+
+.auth-box h1 {
+    margin-bottom: 25px;
+    font-size: 1.8rem;
+    text-align: center;
+}
+
+/* Section headings inside a panel, such as "Profile" on the settings page. */
+.auth-box h2 {
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+    color: var(--blue);
 }
 
 .toggle-text {
@@ -92,6 +104,28 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Settings page layout
+   --------------------------------------------------------------------------- */
+.settings-page {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 40px 20px 60px;
+}
+
+.page-title {
+    margin-bottom: 30px;
+    font-size: 2.2rem;
+    text-align: center;
+}
+
+/* One column on phones; two side by side once there is room. */
+.settings-grid {
+    display: grid;
+    gap: 30px;
+    justify-items: center;
+}
+
+/* ---------------------------------------------------------------------------
    Form fields
    --------------------------------------------------------------------------- */
 .input-group {
@@ -105,7 +139,8 @@
     opacity: 0.8;
 }
 
-.input-group input {
+.input-group input,
+.input-group select {
     width: 100%;
     padding: 12px;
     background: var(--glass);
@@ -119,15 +154,51 @@
 
 /* The purple border and glow replace the default focus outline, so keyboard
    users can still see which field is active. */
-.input-group input:focus {
+.input-group input:focus,
+.input-group select:focus {
     border-color: var(--purple);
     box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+/* Dropdown menus: the browser's default arrow is replaced with one in the
+   theme's purple, drawn as a small inline SVG image. */
+.input-group select {
+    padding-right: 36px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b5cf6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+}
+
+/* The open list of options, which browsers draw on their own background. */
+.input-group select option {
+    background: #1A1B35;
+    color: var(--text);
+}
+
+/* Browser autofill paints fields with its own light background, which
+   breaks the dark theme. Browsers do not allow that background to be
+   changed directly, so a large inset shadow is drawn over it in the panel
+   colour instead, and the text colour is restored. */
+.input-group input:-webkit-autofill,
+.input-group input:-webkit-autofill:hover {
+    -webkit-text-fill-color: var(--text);
+    -webkit-box-shadow: 0 0 0 1000px #1C1D33 inset;
+    caret-color: var(--text);
+}
+
+.input-group input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--text);
+    -webkit-box-shadow: 0 0 0 1000px #1C1D33 inset, 0 0 10px rgba(139, 92, 246, 0.5);
 }
 
 /* aria-invalid is set by the render_field macro when a field has an error,
    so the same attribute drives both the styling and what screen readers
    announce. */
-.input-group input[aria-invalid="true"] {
+.input-group input[aria-invalid="true"],
+.input-group select[aria-invalid="true"] {
     border-color: var(--coral);
 }
 
@@ -141,6 +212,26 @@
     margin: -10px 0 18px;
     font-size: 0.85rem;
     opacity: 0.7;
+}
+
+/* A checkbox sits beside its label rather than below it. accent-color
+   tints the browser's own checkbox, which keeps it fully accessible. */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.checkbox-group input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--purple);
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    cursor: pointer;
 }
 
 /* A message about the whole form rather than one field, such as a failed
@@ -160,7 +251,8 @@
     margin: 10px 0 0;
 }
 
-button:focus-visible {
+button:focus-visible,
+.checkbox-group input:focus-visible {
     outline: 2px solid var(--blue);
     outline-offset: 3px;
 }
@@ -205,8 +297,15 @@ button:focus-visible {
 }
 
 /* ---------------------------------------------------------------------------
-   Small screens
+   Screen size adjustments
    --------------------------------------------------------------------------- */
+@media (min-width: 900px) {
+    .settings-grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
 @media (max-width: 600px) {
     .nav-form {
         margin-left: 18px;
