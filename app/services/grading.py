@@ -1,6 +1,7 @@
 """
 Grading service: turns a learner's test results into a pass or fail, records
-the submission, and awards XP (spec FR06, FR07, PR-L3).
+the submission, and awards XP, streak days, and badges (spec FR06, FR07,
+FR08, PR-G1, PR-L3).
 
 How grading works with code that runs in the browser (decision DR-03):
 
@@ -16,12 +17,14 @@ problem. The server never runs learner code.
 """
 
 import re
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 
 from app.extensions import db
 from app.models import ContentSource, Hint, LearnerProfile, Submission, SubmissionStatus
 from app.services.challenges import normalise_newlines
+from app.services.gamification import award_badges, displayed_streak, record_activity
 
 MAX_CODE_LENGTH = 20_000
 MAX_OUTPUT_LENGTH = 65_536  # 64 KB of output per test (spec FR06).
@@ -29,8 +32,9 @@ MAX_ERROR_LENGTH = 200
 MAX_EXECUTION_MS = 60_000
 
 # XP needed to move from level n to level n + 1 is LEVEL_XP_STEP * n (spec
-# FR07, tunable): level 2 at 100 XP, level 3 at 300, level 4 at 600. Moves
-# into config.py with the rest of gamification in Part 9.
+# FR07, tunable): level 2 at 100 XP, level 3 at 300, level 4 at 600. Kept
+# here rather than in config.py because level_for_xp() is a pure function
+# used and tested without a running application.
 LEVEL_XP_STEP = 100
 
 # Each AI hint used before the first solve reduces its XP by this share, but
@@ -123,7 +127,7 @@ def runnable_tests(challenge):
 # Grading
 # ---------------------------------------------------------------------------
 
-def grade_submission(account, challenge, code, results, execution_ms=None):
+def grade_submission(account, challenge, code, results, execution_ms=None, now=None):
     """Grade results reported by the browser and record the submission.
 
     Args:
@@ -133,6 +137,8 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
         results: a list with one entry per test:
             {"test_id": int, "output": str, "error": str or None}.
         execution_ms: total run time reported by the browser, optional.
+        now: the current time. Defaults to the real time; tests pass fixed
+            times to check streaks across days without waiting.
 
     Returns:
         (submission, feedback): the saved Submission, and a dictionary safe
@@ -143,6 +149,7 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
         GradingError: if the submission is malformed or does not match the
             challenge's tests.
     """
+    now = now or datetime.now(UTC)
     code = _validate_code(code)
     outcomes = _validate_results(challenge, results)
     execution_ms = _validate_execution_ms(execution_ms)
@@ -198,8 +205,16 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
     )
     db.session.add(submission)
 
-    # One commit for the submission and the XP together, so they can never
-    # disagree (spec FR07).
+    new_badges = []
+    if passed_all:
+        # Sent to the database first (not yet committed), so the badge
+        # rules below count this solve.
+        db.session.flush()
+        record_activity(profile, account.party, now)
+        new_badges = award_badges(account, profile)
+
+    # One commit for the submission, XP, streak, and badges together, so
+    # they can never disagree (spec FR07).
     db.session.commit()
 
     feedback = {
@@ -213,6 +228,8 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
         "hints_used": ai_hints,
         "total_xp": profile.total_xp,
         "level": profile.level,
+        "current_streak": displayed_streak(profile, account.party, now),
+        "new_badges": new_badges,
         "tests": feedback_tests,
     }
     return submission, feedback

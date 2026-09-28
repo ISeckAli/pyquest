@@ -9,8 +9,8 @@ table with db.create_all().
 Models are split into modules by feature area, matching the blueprint
 structure: identity (people, accounts, roles), challenge (topics,
 challenges, test cases, fallback hints), submission (graded attempts),
-saved_code (each learner's working copy), and coach (hints, Coach messages,
-and AI usage).
+saved_code (each learner's working copy), coach (hints, Coach messages, AI
+usage), and gamification (earned badges).
 """
 
 from app.models.challenge import (
@@ -29,6 +29,7 @@ from app.models.coach import (
     Hint,
     MessageSender,
 )
+from app.models.gamification import LearnerBadge
 from app.models.identity import (
     LearnerProfile,
     Party,
@@ -52,6 +53,7 @@ __all__ = [
     "Difficulty",
     "FallbackHint",
     "Hint",
+    "LearnerBadge",
     "LearnerProfile",
     "MessageSender",
     "Party",
