@@ -1,6 +1,6 @@
 """
 JSON endpoints for running, saving, and submitting challenges (spec FR05,
-FR06).
+FR06), and for instructors checking a reference solution (FR12).
 """
 
 from functools import wraps
@@ -9,8 +9,9 @@ from flask import jsonify, request
 from flask_login import current_user
 
 from app.api import bp
-from app.models import RoleType
-from app.services.challenges import get_published
+from app.extensions import db
+from app.models import Challenge, RoleType
+from app.services.challenges import can_manage, get_published
 from app.services.grading import GradingError, grade_submission, runnable_tests
 from app.services.workspace import WorkspaceError, save_code
 
@@ -113,3 +114,33 @@ def submit(slug):
         return jsonify(error=str(error)), 400
 
     return jsonify(feedback)
+
+
+@bp.route("/instructor/challenges/<int:challenge_id>/reference-check")
+@api_role_required(RoleType.INSTRUCTOR, RoleType.SYSTEM_ADMINISTRATOR)
+def reference_check(challenge_id):
+    """The reference solution and every test with its expected output.
+
+    The only endpoint that sends hidden expected outputs to a browser, so it
+    is limited to accounts that may manage this particular challenge: its
+    author or an administrator. It works for drafts too, since the check is
+    meant to run before publishing.
+    """
+    challenge = db.session.get(Challenge, challenge_id)
+    if challenge is None:
+        return _not_found()
+    if not can_manage(current_user, challenge):
+        return jsonify(error="You do not have access to this."), 403
+
+    return jsonify(
+        code=challenge.reference_solution,
+        tests=[
+            {
+                "id": test.id,
+                "input": test.input_data,
+                "expected": test.expected_output,
+                "hidden": test.is_hidden,
+            }
+            for test in challenge.test_cases
+        ],
+    )

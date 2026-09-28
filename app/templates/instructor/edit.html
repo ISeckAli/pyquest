@@ -1,6 +1,7 @@
 {#
   Challenge edit page, rendered by instructor.edit_challenge: publishing
-  status and actions, test cases, and the challenge details.
+  status and actions, the reference-solution check, test cases, and the
+  challenge details.
 
   Every action is a small POST form with a CSRF token. Deleting uses a
   fold-out <details> section with its own confirm button, a confirmation
@@ -14,6 +15,8 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+    {# Result styles shared with the learner workspace. #}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/challenge.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -43,7 +46,7 @@
                 {% endfor %}
             </ul>
         {% else %}
-            <p>Ready to publish.</p>
+            <p>Ready to publish. Check the reference solution below first.</p>
         {% endif %}
 
         <div class="button-row">
@@ -61,6 +64,15 @@
                 </form>
             {% endif %}
         </div>
+
+        <h3 class="form-section-title">Check the reference solution</h3>
+        <p class="field-hint">
+            Runs your saved reference solution against every test, hidden ones
+            included, in your browser. Do this before publishing, so learners are
+            never graded against a wrong expected output.
+        </p>
+        <button type="button" id="reference-check-button" class="btn btn-secondary btn-small">Check reference solution</button>
+        <div id="reference-check-results" class="results" aria-live="polite"></div>
 
         {% if not challenge.is_published %}
             <details class="danger-zone">
@@ -129,4 +141,11 @@
         </form>
     </div>
 </section>
+
+{# Settings for reference-check.js, written with tojson so they are safe data. #}
+<script type="application/json" id="reference-check-data">{{ {
+    "checkUrl": url_for('api.reference_check', challenge_id=challenge.id),
+    "workerUrl": url_for('static', filename='js/python-worker.js')
+} | tojson }}</script>
+<script src="{{ url_for('static', filename='js/reference-check.js') }}"></script>
 {% endblock %}
