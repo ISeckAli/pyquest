@@ -184,12 +184,16 @@ def test_yesterdays_missions_have_expired(learner, topic):
     assert yesterday.progress == 0
 
 
-def test_mission_titles_name_the_difficulty_and_topic(learner, topic):
-    difficulty = add_mission(learner, SOLVE_DIFFICULTY, target="intermediate")
+def test_mission_titles_use_the_right_article_and_name_the_topic(learner, topic):
+    intermediate = add_mission(learner, SOLVE_DIFFICULTY, target="intermediate")
+    beginner = DailyMission(
+        party_id=learner.party_id, mission_date=TODAY + timedelta(days=1),
+        template=SOLVE_DIFFICULTY, target="beginner", goal=1, progress=0, bonus_xp=15,
+    )
     in_topic = add_mission(learner, SOLVE_TWO_IN_TOPIC, target="strings", goal=2)
 
-    assert describe(difficulty)["title"] == "Solve a Intermediate challenge" or \
-        describe(difficulty)["title"] == "Solve an Intermediate challenge"
+    assert describe(intermediate)["title"] == "Solve an Intermediate challenge"
+    assert describe(beginner)["title"] == "Solve a Beginner challenge"
     assert describe(in_topic)["title"] == "Solve 2 challenges in Strings"
 
 

@@ -132,12 +132,18 @@ def progress_missions(account, challenge, submission, now):
     return completed
 
 
+def _with_article(word):
+    """ "an Intermediate", "an Advanced", "a Beginner": the article that
+    fits the word's first letter."""
+    return f"{'an' if word[:1].lower() in 'aeiou' else 'a'} {word}"
+
+
 def describe(mission):
     """A mission ready to display."""
     if mission.template == SOLVE_ANY:
         title = "Solve any challenge"
     elif mission.template == SOLVE_DIFFICULTY:
-        title = f"Solve a {Difficulty(mission.target).label} challenge"
+        title = f"Solve {_with_article(Difficulty(mission.target).label)} challenge"
     elif mission.template == SOLVE_UNASSISTED:
         title = "Solve a challenge without AI hints"
     else:

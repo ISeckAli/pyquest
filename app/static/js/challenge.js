@@ -1,13 +1,14 @@
 /*
   Challenge workspace: the code editor, running Python in the browser,
-  saving work, submitting results for grading, and the AI Coach (spec FR05,
-  FR06, section 5.9, decision DR-03).
+  saving work, submitting results for grading, rewards, and the AI Coach
+  (spec FR05 to FR10, section 5.9, decision DR-03).
 
   - Run examples: runs the learner's code on the visible tests only and
     compares the output here. Nothing is sent to the server; no XP.
   - Submit: runs every test (hidden ones included), sends the outputs to
     the server, and shows its verdict. The server holds the hidden expected
-    outputs, decides pass or fail, and awards XP.
+    outputs, decides pass or fail, and awards XP, mission bonuses, streak
+    days, and badges, which are shown after a pass.
   - Autosave: the code is saved shortly after the learner stops typing, so
     leaving the page and coming back never loses work.
   - AI Coach: progressive hints, and "Why did this fail?" after a failed
@@ -551,13 +552,34 @@
     return element("p", "result-note", "Solved again. XP is awarded for the first solve only.");
   }
 
+  // Missions completed, badges earned, and the streak, shown after a pass
+  // (spec FR08, FR10, PR-G1).
+  function rewardItems(feedback) {
+    const items = [];
+    for (const mission of feedback.completed_missions || []) {
+      items.push(
+        element("p", "result-note", `Mission complete: ${mission.title} (+${mission.bonus_xp} XP)`),
+      );
+    }
+    for (const badge of feedback.new_badges || []) {
+      items.push(element("p", "xp-banner", `New badge: ${badge.icon} ${badge.name}. ${badge.description}`));
+    }
+    if (feedback.current_streak > 0) {
+      const days = feedback.current_streak === 1 ? "day" : "days";
+      items.push(element("p", "result-note", `🔥 Streak: ${feedback.current_streak} ${days}`));
+    }
+    return items;
+  }
+
   function showResults({ heading, passed, items, note, feedback }) {
     resultsElement.replaceChildren(
       element("p", `result-summary ${passed ? "is-pass" : "is-fail"}`, heading),
     );
     if (feedback) {
       resultsElement.append(outcomeMessage(feedback));
-      if (!feedback.passed && feedback.submission_id) {
+      if (feedback.passed) {
+        resultsElement.append(...rewardItems(feedback));
+      } else if (feedback.submission_id) {
         resultsElement.append(explanationBlock(feedback.submission_id));
       }
     }

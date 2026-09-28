@@ -1,0 +1,162 @@
+/*
+  Learner dashboard styles. Loaded only on the dashboard, through the
+  extra_head block in base.html.
+*/
+
+.dashboard-page {
+    max-width: 1000px;
+}
+
+.dash-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    padding: 22px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--blue);
+}
+
+.stat-note {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+/* ---------------------------------------------------------------------------
+   Level progress
+   --------------------------------------------------------------------------- */
+.level-bar {
+    height: 14px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+}
+
+.level-bar-fill {
+    height: 100%;
+    background: var(--gradient-button);
+    border-radius: 999px;
+}
+
+.level-note {
+    margin: 8px 0 0;
+}
+
+/* ---------------------------------------------------------------------------
+   Missions
+   --------------------------------------------------------------------------- */
+.mission-list {
+    margin-bottom: 16px;
+    list-style: none;
+}
+
+.mission {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.mission-status {
+    width: 22px;
+    color: var(--blue);
+    font-weight: 700;
+    text-align: center;
+}
+
+.mission-title {
+    flex: 1;
+}
+
+.mission-progress {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* A finished mission is dimmed and says "Done" in words, so colour is not
+   the only signal (WCAG 2.1). */
+.mission.is-done .mission-title {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+/* ---------------------------------------------------------------------------
+   Badges
+   --------------------------------------------------------------------------- */
+.badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 14px;
+}
+
+.badge-card {
+    padding: 16px;
+    background: rgba(255, 215, 90, 0.06);
+    border: 1px solid rgba(255, 215, 90, 0.4);
+    border-radius: 14px;
+    text-align: center;
+}
+
+.badge-card h3 {
+    margin: 6px 0;
+    font-size: 1rem;
+}
+
+.badge-card p {
+    font-size: 0.85rem;
+    opacity: 0.85;
+}
+
+.badge-icon {
+    font-size: 2rem;
+}
+
+.badge-date {
+    margin-top: 6px;
+    color: #FFD75A;
+}
+
+/* Locked badges are greyed out; the heading above them and the hidden
+   "(locked)" text make their state clear without relying on colour. */
+.badge-card.is-locked {
+    background: var(--glass);
+    border-color: var(--glass-border);
+    filter: grayscale(1);
+    opacity: 0.5;
+}
+
+.locked-heading {
+    margin: 24px 0 12px;
+    font-size: 1rem;
+    color: var(--blue);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
