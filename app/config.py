@@ -94,10 +94,12 @@ class Config:
     # as available on the free tier in Google AI Studio.
     AI_MODEL = os.environ.get("AI_MODEL", "gemini-3.8-flash")
 
-    # Seconds to wait for a reply before falling back. The spec's original
-    # figure was 8 (FR11), but Gemini rejects any request that allows less
-    # than 10 seconds, so 10 is the practical minimum.
-    AI_TIMEOUT_SECONDS = 10
+    # Seconds to wait for a reply before falling back to a built-in hint.
+    # The spec's original figure was 8 (FR11), but Gemini rejects requests
+    # allowing under 10 seconds, and on the free tier replies at busy times
+    # often take longer than that. 20 gives real answers time to arrive
+    # while still falling back if the AI is truly stuck. Adjustable in .env.
+    AI_TIMEOUT_SECONDS = int(os.environ.get("AI_TIMEOUT_SECONDS", "20"))
 
 
 class DevelopmentConfig(Config):
