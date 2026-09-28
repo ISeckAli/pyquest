@@ -1,0 +1,76 @@
+{#
+  Instructor analytics (spec FR15), rendered by instructor.analytics.
+  "Needs attention" is shown in words as well as colour (WCAG 2.1).
+#}
+{% extends "base.html" %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('instructor.challenge_list') }}">Your challenges</a>
+        <span aria-hidden="true">/</span>
+        Analytics
+    </nav>
+
+    <h1 class="page-title page-title-left">
+        {% if is_admin %}Analytics: all challenges{% else %}Analytics: your challenges{% endif %}
+    </h1>
+    <p class="field-hint">
+        A challenge needs attention when at least {{ min_learners }} learners have
+        tried it and fewer than {{ low_rate }}% solved it. It may be unclear, too
+        hard, or have a wrong expected output: try "Check reference solution" on
+        its edit page.
+    </p>
+
+    {% if stats %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Challenge</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Learners</th>
+                        <th scope="col">Solved</th>
+                        <th scope="col">Pass rate</th>
+                        <th scope="col">Top error</th>
+                        <th scope="col">AI hints</th>
+                        <th scope="col"><span class="visually-hidden">Attention</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in stats %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('instructor.edit_challenge', challenge_id=row.id) }}">{{ row.title }}</a>
+                            </td>
+                            <td>
+                                <span class="pill pill-status-{{ row.status }}">{{ row.status | title }}</span>
+                            </td>
+                            <td>{{ row.learners }}</td>
+                            <td>
+                                {{ row.solvers }}{% if row.solve_rate is not none %} ({{ row.solve_rate }}%){% endif %}
+                            </td>
+                            <td>{% if row.pass_rate is not none %}{{ row.pass_rate }}%{% else %}—{% endif %}</td>
+                            <td>{{ row.top_error or "—" }}</td>
+                            <td>{{ row.ai_hints }}</td>
+                            <td>
+                                {% if row.needs_attention %}
+                                    <span class="pill pill-status-unpublished">Needs attention</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No challenges yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

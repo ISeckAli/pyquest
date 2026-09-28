@@ -16,7 +16,10 @@
         <h1 class="page-title page-title-left">
             {% if is_admin %}All challenges{% else %}Your challenges{% endif %}
         </h1>
-        <a class="btn btn-primary btn-small" href="{{ url_for('instructor.new_challenge') }}">New challenge</a>
+        <div class="button-row">
+            <a class="btn btn-secondary btn-small" href="{{ url_for('instructor.analytics') }}">Analytics</a>
+            <a class="btn btn-primary btn-small" href="{{ url_for('instructor.new_challenge') }}">New challenge</a>
+        </div>
     </div>
 
     {% if challenges %}
