@@ -3,8 +3,9 @@ AI Coach models (spec section 5.9, section 7).
 
     Hint           a hint given for a challenge: level 1 to 3, from the AI
                    or from the instructor's fallback hints (PR-C1)
-    CoachMessage   any other Coach reply: failure explanations (PR-C2) now;
-                   chat, code reviews, and progress summaries later
+    CoachMessage   a Coach reply or a learner's chat message: failure
+                   explanations (PR-C2), chat (PR-C4), code reviews (PR-C3),
+                   and later progress summaries (PR-C5)
     AIUsage        how many AI calls a learner made per day, so the free AI
                    quota is shared fairly (spec section 5.9, limits)
 """
@@ -22,16 +23,21 @@ from app.models.identity import utc_now
 
 
 class ContentSource(StrEnum):
-    """Where a piece of Coach content came from."""
+    """Where a piece of Coach content came from.
+
+    Stored as plain text (see _enum_type), so adding a value here needs no
+    database migration.
+    """
 
     AI = "ai"
     FALLBACK = "fallback"  # Instructor-written, or a general message.
+    LEARNER = "learner"  # A learner's own chat message.
 
 
 class CoachMessageKind(StrEnum):
     EXPLANATION = "explanation"  # "Why did this fail?" (PR-C2)
-    CHAT = "chat"  # Ask the Coach (PR-C4, Part 8)
-    REVIEW = "review"  # Code review after passing (PR-C3, Part 8)
+    CHAT = "chat"  # Ask the Coach (PR-C4)
+    REVIEW = "review"  # Code review after passing (PR-C3)
     SUMMARY = "summary"  # Progress coaching (PR-C5, Part 10)
 
 
@@ -84,7 +90,7 @@ class CoachMessage(db.Model):
     content: Mapped[str] = mapped_column(Text)
     source: Mapped[ContentSource] = mapped_column(_enum_type(ContentSource))
 
-    # The learner's thumbs up or down (spec PR-C6, Part 8).
+    # The learner's thumbs up or down on a Coach reply (spec PR-C6).
     rating: Mapped[Optional[str]] = mapped_column(String(10))
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
