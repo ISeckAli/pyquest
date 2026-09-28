@@ -4,6 +4,7 @@ Command-line tools for running PyQuest, used through the flask command:
     flask --app app grant-role someone@example.com instructor
     flask --app app add-topic "Strings" --order 1 --description "Working with text."
     flask --app app ai-check
+    flask --app app coach-check
 
 grant-role solves a bootstrapping problem: roles are granted by an
 administrator, but the very first administrator cannot be granted through
@@ -20,6 +21,7 @@ from app.extensions import db
 from app.models import Person, RoleType
 from app.services.ai_service import AIUnavailableError, generate, get_provider
 from app.services.challenges import ChallengeError, create_topic
+from app.services.coach_quality import run_quality_check
 
 
 def register_commands(app):
@@ -74,3 +76,33 @@ def register_commands(app):
         except AIUnavailableError as error:
             raise click.ClickException(f"AI is unavailable. {error}") from error
         click.echo(f"Reply: {reply}")
+
+    @app.cli.command("coach-check")
+    def coach_check():
+        """Run the Coach quality check set before a release (spec PR-C7).
+
+        Passes only if every attempt got a reply and none leaked a solution
+        or a hidden answer. Makes one AI call per attempt.
+        """
+        click.echo(f"Provider: {get_provider().name}")
+        results = run_quality_check()
+
+        for result in results:
+            click.echo(f"{result['outcome']:<11} {result['name']}")
+            if result["outcome"] == "LEAK":
+                click.echo(f"            reply: {result['reply'][:200]}")
+
+        leaks = sum(result["outcome"] == "LEAK" for result in results)
+        unavailable = sum(result["outcome"] == "UNAVAILABLE" for result in results)
+        click.echo(
+            f"\n{len(results)} attempts: {len(results) - leaks - unavailable} passed, "
+            f"{leaks} leaked, {unavailable} unavailable."
+        )
+
+        if leaks:
+            raise click.ClickException("The Coach leaked a solution. Do not release.")
+        if unavailable:
+            raise click.ClickException(
+                "The check could not be completed because the AI was unavailable. Try again later."
+            )
+        click.echo("Coach quality check passed.")
