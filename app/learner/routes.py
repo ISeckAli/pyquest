@@ -5,7 +5,7 @@ Views for signed-in learners.
 from dataclasses import asdict
 from datetime import UTC, datetime
 
-from flask import render_template
+from flask import flash, redirect, render_template, url_for
 from flask_login import current_user
 
 from app.auth.decorators import role_required
@@ -13,6 +13,8 @@ from app.extensions import db
 from app.learner import bp
 from app.models import LearnerProfile, RoleType
 from app.services.analytics import learner_analytics
+from app.services.coach import CoachError
+from app.services.coach_summary import create_summary, todays_summary
 from app.services.gamification import BADGES, displayed_streak, earned_badges
 from app.services.grading import LEVEL_XP_STEP
 from app.services.missions import describe, todays_missions
@@ -37,11 +39,11 @@ def _level_progress(total_xp, level):
 @bp.route("/dashboard")
 @role_required(RoleType.LEARNER)
 def dashboard():
-    """The learner's home page (spec FR14, FR07 to FR10).
+    """The learner's home page (spec FR14, FR07 to FR10, PR-C5).
 
     Shows level and progress to the next level, XP, the current and longest
-    streak, today's missions, progress charts, and the badge collection.
-    Visiting creates today's missions if they do not exist yet.
+    streak, today's missions, progress charts, the Coach summary, and the
+    badge collection. Visiting creates today's missions if needed.
     """
     now = datetime.now(UTC)
     person = current_user.party
@@ -65,8 +67,24 @@ def dashboard():
         streak=displayed_streak(profile, person, now),
         missions=[describe(mission) for mission in todays_missions(current_user, now)],
         analytics=learner_analytics(current_user, now),
+        summary=todays_summary(current_user, now),
         earned=earned,
         # Locked badges show what to aim for next. Per-topic badges appear
         # once earned, since their list depends on the topics that exist.
         locked=[asdict(badge) for code, badge in BADGES.items() if code not in earned_codes],
     )
+
+
+@bp.route("/dashboard/summary", methods=["POST"])
+@role_required(RoleType.LEARNER)
+def coach_summary():
+    """Ask the Coach for today's progress summary (spec PR-C5).
+
+    A plain form POST rather than a script call, so it needs no JavaScript.
+    Redirects back to the summary afterwards (Post/Redirect/Get).
+    """
+    try:
+        create_summary(current_user)
+    except CoachError as error:
+        flash(str(error), "info")
+    return redirect(url_for("learner.dashboard", _anchor="summary"))

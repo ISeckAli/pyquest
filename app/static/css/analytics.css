@@ -1,5 +1,5 @@
 /*
-  Progress chart styles for the learner dashboard.
+  Progress chart and Coach summary styles for the learner dashboard.
 */
 
 .chart-grid {
@@ -33,4 +33,25 @@
     padding-left: 18px;
     font-size: 0.85rem;
     opacity: 0.8;
+}
+
+/* The Coach summary, matching Coach replies on challenge pages. */
+.coach-card {
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid var(--glass-border);
+    border-left: 4px solid var(--purple);
+    border-radius: 10px;
+}
+
+.coach-label {
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: #B79CFF;
+}
+
+.coach-text {
+    line-height: 1.6;
+    white-space: pre-wrap;
 }

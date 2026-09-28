@@ -1,7 +1,7 @@
 {#
-  Learner dashboard (spec FR14, with FR07 to FR10), rendered by
+  Learner dashboard (spec FR14, with FR07 to FR10 and PR-C5), rendered by
   learner.dashboard: level and progress, XP, streak, today's missions,
-  progress charts, and the badge collection.
+  progress charts, the Coach summary, and the badge collection.
 
   Every chart has a text summary beneath it with the same numbers, since
   screen readers cannot read a picture (WCAG 2.1).
@@ -116,6 +116,29 @@
             <script src="{{ url_for('static', filename='js/dashboard-charts.js') }}"></script>
         {% else %}
             <p class="field-hint">Submit a solution to see your progress charts here.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel" id="summary">
+        <h2>Coach summary</h2>
+        {% if summary %}
+            <div class="coach-card">
+                <p class="coach-label">
+                    {{ "AI Coach · AI-generated" if summary.source.value == "ai" else "Built-in summary" }}
+                    · {{ summary.created_at.strftime("%b %d") }}
+                </p>
+                <p class="coach-text">{{ summary.content }}</p>
+            </div>
+            <p class="field-hint">You can get a new summary each day.</p>
+        {% else %}
+            <p class="field-hint">
+                A short note from the Coach on your strengths and what to practise next,
+                based on your statistics. One per day.
+            </p>
+            <form method="post" action="{{ url_for('learner.coach_summary') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-secondary btn-small">Get my progress summary</button>
+            </form>
         {% endif %}
     </div>
 
