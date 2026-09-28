@@ -79,6 +79,26 @@ class Config:
     # Instructor-written hints used when the AI Coach is unavailable (NFR05).
     CHALLENGE_MAX_FALLBACK_HINTS = 3
 
+    # --- AI Coach (spec section 5.9, section 11, DR-02) ----------------------
+
+    # Which provider app/services/ai_service.py uses: "gemini", "fake" (tests
+    # only), or anything else to switch AI off. Off by default, so a fresh
+    # checkout with no key still runs; every Coach feature then falls back
+    # to instructor-written content.
+    AI_PROVIDER = os.environ.get("AI_PROVIDER", "disabled")
+
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+    # The Gemini model to use. Google renames and retires models over time,
+    # so this can be changed in .env without touching code. Pick one listed
+    # as available on the free tier in Google AI Studio.
+    AI_MODEL = os.environ.get("AI_MODEL", "gemini-3.8-flash")
+
+    # Seconds to wait for a reply before falling back. The spec's original
+    # figure was 8 (FR11), but Gemini rejects any request that allows less
+    # than 10 seconds, so 10 is the practical minimum.
+    AI_TIMEOUT_SECONDS = 10
+
 
 class DevelopmentConfig(Config):
     """Local development on a developer's machine."""
@@ -108,6 +128,10 @@ class TestingConfig(Config):
     # to keep them focused on the behaviour under test. A dedicated test
     # turns CSRF back on to prove forms reject requests without a token.
     WTF_CSRF_ENABLED = False
+
+    # Tests never call a real AI: no network needed, no quota used, and the
+    # fake provider records exactly what would have been sent.
+    AI_PROVIDER = "fake"
 
 
 class ProductionConfig(Config):

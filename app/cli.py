@@ -3,6 +3,7 @@ Command-line tools for running PyQuest, used through the flask command:
 
     flask --app app grant-role someone@example.com instructor
     flask --app app add-topic "Strings" --order 1 --description "Working with text."
+    flask --app app ai-check
 
 grant-role solves a bootstrapping problem: roles are granted by an
 administrator, but the very first administrator cannot be granted through
@@ -17,6 +18,7 @@ from sqlalchemy import select
 
 from app.extensions import db
 from app.models import Person, RoleType
+from app.services.ai_service import AIUnavailableError, generate, get_provider
 from app.services.challenges import ChallengeError, create_topic
 
 
@@ -54,3 +56,21 @@ def register_commands(app):
         except ChallengeError as error:
             raise click.ClickException(str(error)) from error
         click.echo(f"Created topic '{topic.name}' (slug: {topic.slug}).")
+
+    @app.cli.command("ai-check")
+    def ai_check():
+        """Send one tiny request to the AI provider to confirm it works.
+
+        Useful after setting or changing GEMINI_API_KEY or AI_MODEL. Never
+        prints the key itself.
+        """
+        provider = get_provider()
+        click.echo(f"Provider: {provider.name}")
+        try:
+            reply = generate(
+                "You are a connection test. Reply with exactly the phrase you are asked for.",
+                "Reply with exactly: PyQuest AI is working.",
+            )
+        except AIUnavailableError as error:
+            raise click.ClickException(f"AI is unavailable. {error}") from error
+        click.echo(f"Reply: {reply}")
