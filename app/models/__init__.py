@@ -8,8 +8,9 @@ table with db.create_all().
 
 Models are split into modules by feature area, matching the blueprint
 structure: identity (people, accounts, roles), challenge (topics,
-challenges, test cases, fallback hints), submission (graded attempts), and
-saved_code (each learner's working copy of their code).
+challenges, test cases, fallback hints), submission (graded attempts),
+saved_code (each learner's working copy), and coach (hints, Coach messages,
+and AI usage).
 """
 
 from app.models.challenge import (
@@ -19,6 +20,14 @@ from app.models.challenge import (
     FallbackHint,
     TestCase,
     Topic,
+)
+from app.models.coach import (
+    AIUsage,
+    CoachMessage,
+    CoachMessageKind,
+    ContentSource,
+    Hint,
+    MessageSender,
 )
 from app.models.identity import (
     LearnerProfile,
@@ -34,11 +43,17 @@ from app.models.submission import Submission, SubmissionStatus
 # The public names of this package. Listing them documents what other code
 # is expected to import, and tells linters these imports are intentional.
 __all__ = [
+    "AIUsage",
     "Challenge",
     "ChallengeStatus",
+    "CoachMessage",
+    "CoachMessageKind",
+    "ContentSource",
     "Difficulty",
     "FallbackHint",
+    "Hint",
     "LearnerProfile",
+    "MessageSender",
     "Party",
     "Person",
     "Role",
