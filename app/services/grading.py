@@ -1,7 +1,7 @@
 """
 Grading service: turns a learner's test results into a pass or fail, records
-the submission, and awards XP, streak days, and badges (spec FR06, FR07,
-FR08, PR-G1, PR-L3).
+the submission, and awards XP, mission bonuses, streak days, and badges
+(spec FR06, FR07, FR08, FR10, PR-G1, PR-L3).
 
 How grading works with code that runs in the browser (decision DR-03):
 
@@ -25,6 +25,7 @@ from app.extensions import db
 from app.models import ContentSource, Hint, LearnerProfile, Submission, SubmissionStatus
 from app.services.challenges import normalise_newlines
 from app.services.gamification import award_badges, displayed_streak, record_activity
+from app.services.missions import describe, progress_missions
 
 MAX_CODE_LENGTH = 20_000
 MAX_OUTPUT_LENGTH = 65_536  # 64 KB of output per test (spec FR06).
@@ -138,7 +139,7 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
             {"test_id": int, "output": str, "error": str or None}.
         execution_ms: total run time reported by the browser, optional.
         now: the current time. Defaults to the real time; tests pass fixed
-            times to check streaks across days without waiting.
+            times to check streaks and missions across days without waiting.
 
     Returns:
         (submission, feedback): the saved Submission, and a dictionary safe
@@ -185,11 +186,11 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
     # XP only for the first passing submission (spec FR07), so repeating
     # a solved challenge cannot farm XP. Checked before this submission is
     # added, so it only looks at earlier attempts.
+    first_solve = passed_all and not _already_solved(account.party_id, challenge.id)
     xp_awarded = 0
-    if passed_all and not _already_solved(account.party_id, challenge.id):
+    if first_solve:
         xp_awarded = xp_after_hints(challenge.xp_value, ai_hints)
         profile.total_xp += xp_awarded
-        profile.level = level_for_xp(profile.total_xp)
 
     submission = Submission(
         party_id=account.party_id,
@@ -205,16 +206,27 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
     )
     db.session.add(submission)
 
+    completed_missions = []
+    mission_xp = 0
     new_badges = []
     if passed_all:
-        # Sent to the database first (not yet committed), so the badge
-        # rules below count this solve.
+        # Sent to the database first (not yet committed), so the mission
+        # and badge rules below count this solve.
         db.session.flush()
+
+        # Missions advance on first solves only, so a solved challenge
+        # cannot be repeated to farm mission XP (spec FR10).
+        if first_solve:
+            completed_missions = progress_missions(account, challenge, submission, now)
+            mission_xp = sum(mission.bonus_xp for mission in completed_missions)
+            profile.total_xp += mission_xp
+
+        profile.level = level_for_xp(profile.total_xp)
         record_activity(profile, account.party, now)
         new_badges = award_badges(account, profile)
 
-    # One commit for the submission, XP, streak, and badges together, so
-    # they can never disagree (spec FR07).
+    # One commit for the submission, XP, missions, streak, and badges
+    # together, so they can never disagree (spec FR07).
     db.session.commit()
 
     feedback = {
@@ -226,6 +238,8 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
         "xp_awarded": xp_awarded,
         "xp_full_value": challenge.xp_value,
         "hints_used": ai_hints,
+        "mission_xp": mission_xp,
+        "completed_missions": [describe(mission) for mission in completed_missions],
         "total_xp": profile.total_xp,
         "level": profile.level,
         "current_streak": displayed_streak(profile, account.party, now),

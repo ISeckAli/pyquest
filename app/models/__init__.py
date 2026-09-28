@@ -10,7 +10,7 @@ Models are split into modules by feature area, matching the blueprint
 structure: identity (people, accounts, roles), challenge (topics,
 challenges, test cases, fallback hints), submission (graded attempts),
 saved_code (each learner's working copy), coach (hints, Coach messages, AI
-usage), and gamification (earned badges).
+usage), and gamification (earned badges, daily missions).
 """
 
 from app.models.challenge import (
@@ -29,7 +29,7 @@ from app.models.coach import (
     Hint,
     MessageSender,
 )
-from app.models.gamification import LearnerBadge
+from app.models.gamification import DailyMission, LearnerBadge
 from app.models.identity import (
     LearnerProfile,
     Party,
@@ -50,6 +50,7 @@ __all__ = [
     "CoachMessage",
     "CoachMessageKind",
     "ContentSource",
+    "DailyMission",
     "Difficulty",
     "FallbackHint",
     "Hint",

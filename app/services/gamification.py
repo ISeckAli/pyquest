@@ -17,6 +17,7 @@ from app.extensions import db
 from app.models import (
     Challenge,
     ChallengeStatus,
+    DailyMission,
     Difficulty,
     LearnerBadge,
     Submission,
@@ -49,10 +50,17 @@ BADGES = {
         BadgeDefinition(
             "beginner-graduate", "Beginner Graduate", "Solve every Beginner challenge.", "🎓"
         ),
+        BadgeDefinition(
+            "mission-streak",
+            "Mission Streak",
+            "Complete a daily mission 7 days in a row.",
+            "🗓️",
+        ),
     ]
 }
 
 TOPIC_BADGE_PREFIX = "topic-complete:"
+MISSION_STREAK_DAYS = 7
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +117,17 @@ def displayed_streak(profile, person, now):
     return 0
 
 
+def _longest_run_of_days(days):
+    """The longest stretch of consecutive dates in a set of dates."""
+    longest = current = 0
+    previous = None
+    for day in sorted(days):
+        current = current + 1 if previous == day - timedelta(days=1) else 1
+        longest = max(longest, current)
+        previous = day
+    return longest
+
+
 # ---------------------------------------------------------------------------
 # Badges (FR08)
 # ---------------------------------------------------------------------------
@@ -144,6 +163,20 @@ def unassisted_solve_count(party_id):
     return sum(1 for hints in first_solve_hints.values() if hints == 0)
 
 
+def mission_days(party_id):
+    """The dates on which the learner completed at least one daily mission."""
+    return set(
+        db.session.scalars(
+            select(DailyMission.mission_date)
+            .where(
+                DailyMission.party_id == party_id,
+                DailyMission.completed_at.is_not(None),
+            )
+            .distinct()
+        )
+    )
+
+
 def _qualifying_codes(party_id, profile):
     """Every badge code the learner currently qualifies for."""
     solved = solved_challenge_ids(party_id)
@@ -158,6 +191,7 @@ def _qualifying_codes(party_id, profile):
         (profile.longest_streak, 7, "streak-7"),
         (profile.longest_streak, 30, "streak-30"),
         (unassisted_solve_count(party_id), 10, "unassisted-10"),
+        (_longest_run_of_days(mission_days(party_id)), MISSION_STREAK_DAYS, "mission-streak"),
     ]
     codes.update(code for value, needed, code in thresholds if value >= needed)
 

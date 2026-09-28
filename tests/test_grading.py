@@ -3,6 +3,10 @@ Tests for grading and the challenge API (spec FR06, FR07).
 
 The key guarantee checked throughout: a hidden test's expected output never
 leaves the server, in any response, whether the submission passes or fails.
+
+A first solve can also complete daily missions, which add bonus XP (spec
+FR10). XP checks here therefore compare against the challenge's XP plus the
+mission bonus the feedback reports, so they test grading on its own terms.
 """
 
 import pytest
@@ -109,7 +113,7 @@ def test_correct_submission_passes_and_awards_xp(learner, challenge):
 
     assert submission.status == SubmissionStatus.PASSED
     assert submission.xp_awarded == 10
-    assert learner.party.learner_profile.total_xp == 10
+    assert learner.party.learner_profile.total_xp == 10 + feedback["mission_xp"]
     assert feedback["passed"] is True
     assert count_rows(Submission) == 1
 
@@ -127,11 +131,12 @@ def test_failed_hidden_test_reveals_only_that_it_failed(learner, challenge):
 
 
 def test_xp_is_awarded_only_for_the_first_solve(learner, challenge):
-    grade_submission(learner, challenge, "code", correct_results(challenge))
+    _, first = grade_submission(learner, challenge, "code", correct_results(challenge))
     second, feedback = grade_submission(learner, challenge, "code", correct_results(challenge))
 
     assert second.xp_awarded == 0
-    assert feedback["total_xp"] == 10
+    assert feedback["mission_xp"] == 0
+    assert feedback["total_xp"] == 10 + first["mission_xp"]
 
 
 def test_solving_after_failing_still_awards_xp(learner, challenge):
@@ -182,9 +187,9 @@ def test_reaching_a_threshold_levels_up(learner, challenge):
 def test_missing_learner_profile_is_created(app, challenge):
     account = make_account(with_profile=False)
 
-    grade_submission(account, challenge, "code", correct_results(challenge))
+    _, feedback = grade_submission(account, challenge, "code", correct_results(challenge))
 
-    assert account.party.learner_profile.total_xp == 10
+    assert account.party.learner_profile.total_xp == 10 + feedback["mission_xp"]
 
 
 # ---------------------------------------------------------------------------
