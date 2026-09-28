@@ -1,7 +1,7 @@
 /*
   Challenge workspace: the code editor, running Python in the browser,
-  saving work, and submitting results for grading (spec FR05, FR06,
-  decision DR-03).
+  saving work, submitting results for grading, and the AI Coach (spec FR05,
+  FR06, section 5.9, decision DR-03).
 
   - Run examples: runs the learner's code on the visible tests only and
     compares the output here. Nothing is sent to the server; no XP.
@@ -10,10 +10,12 @@
     outputs, decides pass or fail, and awards XP.
   - Autosave: the code is saved shortly after the learner stops typing, so
     leaving the page and coming back never loses work.
+  - AI Coach: progressive hints, and "Why did this fail?" after a failed
+    submission. Every Coach reply is labelled as AI-generated or built-in.
 
-  All results are added to the page with textContent, never as HTML, so
-  anything a program prints is displayed as plain text and can never be
-  run as code in the page.
+  Everything added to the page uses textContent, never HTML, so program
+  output and AI replies are displayed as plain text and can never be run
+  as code in the page.
 */
 (function () {
   "use strict";
@@ -39,6 +41,9 @@
   const resetButton = document.getElementById("reset-button");
   const statusElement = document.getElementById("run-status");
   const resultsElement = document.getElementById("results");
+  const hintButton = document.getElementById("hint-button");
+  const hintStatusElement = document.getElementById("hint-status");
+  const hintListElement = document.getElementById("hint-list");
 
   // Shows the autosave state beside the buttons. Created here rather than
   // in the template because only this script updates it.
@@ -55,6 +60,52 @@
   let busy = false;
   let saveTimer = null;
   let lastSavedCode = config.initialCode;
+  let hintsReceived = config.hints.length;
+  let hintBusy = false;
+
+  // -------------------------------------------------------------------------
+  // Small helpers
+  // -------------------------------------------------------------------------
+
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) {
+      node.className = className;
+    }
+    if (text !== undefined) {
+      node.textContent = text;
+    }
+    return node;
+  }
+
+  function currentCode() {
+    return editor !== null ? editor.getValue() : config.initialCode;
+  }
+
+  function jsonHeaders() {
+    return {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-CSRFToken": csrfToken,
+    };
+  }
+
+  async function errorMessage(response) {
+    try {
+      const body = await response.json();
+      return body.error || `Request failed (${response.status}).`;
+    } catch {
+      return `Request failed (${response.status}).`;
+    }
+  }
+
+  // A labelled Coach reply. The label always says whether the AI wrote it
+  // (spec section 5.9).
+  function coachCard(label, text) {
+    const card = element("div", "coach-card");
+    card.append(element("p", "coach-label", label), element("p", "coach-text", text));
+    return card;
+  }
 
   // -------------------------------------------------------------------------
   // Status and buttons
@@ -198,15 +249,6 @@
     updateButtons();
   }
 
-  async function errorMessage(response) {
-    try {
-      const body = await response.json();
-      return body.error || `Request failed (${response.status}).`;
-    } catch {
-      return `Request failed (${response.status}).`;
-    }
-  }
-
   // -------------------------------------------------------------------------
   // Autosave
   // -------------------------------------------------------------------------
@@ -217,11 +259,7 @@
       credentials: "same-origin",
       // keepalive lets the request finish even while the page is closing.
       keepalive,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-CSRFToken": csrfToken,
-      },
+      headers: jsonHeaders(),
       body: JSON.stringify({ code }),
     });
   }
@@ -262,6 +300,95 @@
       saveRequest(editor.getValue(), true);
     }
   });
+
+  // -------------------------------------------------------------------------
+  // AI Coach: hints (PR-C1)
+  // -------------------------------------------------------------------------
+
+  function hintLabel(hint) {
+    const source = hint.source === "ai" ? "AI Coach · AI-generated" : "Built-in hint";
+    return `Hint ${hint.level} · ${source}`;
+  }
+
+  function showHint(hint) {
+    hintListElement.append(coachCard(hintLabel(hint), hint.text));
+  }
+
+  function updateHintButton() {
+    const remaining = config.maxHints - hintsReceived;
+    hintButton.disabled = remaining <= 0 || hintBusy;
+    hintButton.textContent = remaining > 0 ? `Get a hint (${remaining} left)` : "No hints left";
+  }
+
+  async function requestHint() {
+    hintBusy = true;
+    updateHintButton();
+    hintStatusElement.textContent = "The Coach is thinking…";
+
+    try {
+      const response = await fetch(config.hintsUrl, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: jsonHeaders(),
+        body: JSON.stringify({ code: currentCode() }),
+      });
+      if (!response.ok) {
+        hintStatusElement.textContent = await errorMessage(response);
+        return;
+      }
+      const hint = await response.json();
+      hintsReceived = hint.level;
+      showHint(hint);
+      hintStatusElement.textContent = "";
+    } catch {
+      hintStatusElement.textContent = "The Coach could not be reached. Check your connection and try again.";
+    } finally {
+      hintBusy = false;
+      updateHintButton();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // AI Coach: "Why did this fail?" (PR-C2)
+  // -------------------------------------------------------------------------
+
+  function explanationBlock(submissionId) {
+    const wrapper = element("div", "coach-explain");
+    const button = element("button", "btn btn-secondary btn-small", "Why did this fail?");
+    button.type = "button";
+    const output = element("div");
+
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      output.replaceChildren(element("p", "result-note", "The Coach is looking at your code…"));
+
+      try {
+        const response = await fetch(config.explanationUrlTemplate.replace("{id}", submissionId), {
+          method: "POST",
+          credentials: "same-origin",
+          headers: jsonHeaders(),
+        });
+        if (!response.ok) {
+          output.replaceChildren(element("p", "form-alert", await errorMessage(response)));
+          button.disabled = false;
+          return;
+        }
+        const data = await response.json();
+        const label = data.source === "ai" ? "AI Coach · AI-generated" : "Built-in explanation";
+        output.replaceChildren(coachCard(label, data.text));
+        // Each failed submission gets one explanation, so the button goes.
+        button.remove();
+      } catch {
+        output.replaceChildren(
+          element("p", "form-alert", "The Coach could not be reached. Check your connection and try again."),
+        );
+        button.disabled = false;
+      }
+    });
+
+    wrapper.append(button, output);
+    return wrapper;
+  }
 
   // -------------------------------------------------------------------------
   // Run and Submit
@@ -338,11 +465,7 @@
       const response = await fetch(config.submitUrl, {
         method: "POST",
         credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-CSRFToken": csrfToken,
-        },
+        headers: jsonHeaders(),
         body: JSON.stringify({
           code: editor.getValue(),
           results: run.results,
@@ -381,17 +504,6 @@
   // Showing results (plain text only; see the note at the top)
   // -------------------------------------------------------------------------
 
-  function element(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) {
-      node.className = className;
-    }
-    if (text !== undefined) {
-      node.textContent = text;
-    }
-    return node;
-  }
-
   function labelled(label, text) {
     const wrapper = element("div");
     wrapper.append(element("p", "result-label", label), element("pre", "code-block", text));
@@ -416,6 +528,15 @@
     return box;
   }
 
+  function xpMessage(feedback) {
+    let message = `+${feedback.xp_awarded} XP!`;
+    if (feedback.xp_awarded < feedback.xp_full_value) {
+      const hints = feedback.hints_used === 1 ? "1 AI hint" : `${feedback.hints_used} AI hints`;
+      message += ` (reduced from ${feedback.xp_full_value} because you used ${hints})`;
+    }
+    return `${message} You now have ${feedback.total_xp} XP and are level ${feedback.level}.`;
+  }
+
   function outcomeMessage(feedback) {
     if (!feedback.passed) {
       return element(
@@ -425,11 +546,7 @@
       );
     }
     if (feedback.xp_awarded > 0) {
-      return element(
-        "p",
-        "xp-banner",
-        `+${feedback.xp_awarded} XP! You now have ${feedback.total_xp} XP and are level ${feedback.level}.`,
-      );
+      return element("p", "xp-banner", xpMessage(feedback));
     }
     return element("p", "result-note", "Solved again. XP is awarded for the first solve only.");
   }
@@ -440,6 +557,9 @@
     );
     if (feedback) {
       resultsElement.append(outcomeMessage(feedback));
+      if (!feedback.passed && feedback.submission_id) {
+        resultsElement.append(explanationBlock(feedback.submission_id));
+      }
     }
     for (const item of items) {
       resultsElement.append(resultItem(item));
@@ -460,6 +580,10 @@
   runButton.addEventListener("click", runExamples);
   submitButton.addEventListener("click", submitSolution);
   resetButton.addEventListener("click", resetCode);
+  hintButton.addEventListener("click", requestHint);
+
+  config.hints.forEach(showHint);
+  updateHintButton();
 
   startWorker();
   loadEditor();

@@ -2,10 +2,11 @@
   A challenge page, rendered by challenges.detail, and by the instructor
   preview with preview=True.
 
-  Signed-in learners get the code workspace (spec FR05). Its settings reach
-  the JavaScript through a JSON script block written with tojson, which
-  escapes "<", so starter code containing "</script>" cannot break out of
-  the block. Visitors see an invitation to log in instead.
+  Signed-in learners get the code workspace (spec FR05) and the AI Coach
+  (section 5.9). Their settings reach the JavaScript through a JSON script
+  block written with tojson, which escapes "<", so text containing
+  "</script>" cannot break out of the block. Visitors see an invitation to
+  log in instead.
 
   Only visible test cases are shown as examples. Hidden tests and the
   reference solution are never used in this template, so they cannot leak
@@ -71,6 +72,20 @@
                     </div>
                 {% endfor %}
             </div>
+
+            {% if can_solve %}
+                <div class="panel">
+                    <h2>AI Coach</h2>
+                    <p class="field-hint coach-intro">
+                        Stuck? Each hint is more specific than the last. Each AI hint
+                        lowers the XP for your first solve by 20% (never below 40%). If
+                        the AI is unavailable you get a built-in hint instead, which is free.
+                    </p>
+                    <button type="button" id="hint-button" class="btn btn-secondary btn-small">Get a hint</button>
+                    <p id="hint-status" class="run-status" role="status"></p>
+                    <div id="hint-list" class="hint-list" aria-live="polite"></div>
+                </div>
+            {% endif %}
         </div>
 
         <div>

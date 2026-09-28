@@ -1,7 +1,8 @@
 /*
   Challenge page styles: the problem and the code workspace side by side
-  on wide screens, stacked on narrow ones. Loaded only by the challenge
-  page, through the extra_head block in base.html.
+  on wide screens, stacked on narrow ones, plus the AI Coach. Loaded only
+  by the challenge page and the instructor edit page, through the
+  extra_head block in base.html.
 */
 
 .challenge-page-wide {
@@ -138,6 +139,47 @@
 .solve-cta a {
     color: var(--blue);
     font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   AI Coach
+   --------------------------------------------------------------------------- */
+.coach-intro {
+    margin: 0 0 14px;
+}
+
+.hint-list {
+    margin-top: 12px;
+}
+
+/* A Coach reply. The purple edge sets Coach content apart from test
+   results, and its label always says who wrote it. */
+.coach-card {
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px solid var(--glass-border);
+    border-left: 4px solid var(--purple);
+    border-radius: 10px;
+}
+
+.coach-label {
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    color: #B79CFF;
+}
+
+.coach-text {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.coach-explain {
+    margin: 12px 0;
+}
+
+.coach-explain .coach-card {
+    margin-top: 10px;
 }
 
 @media (min-width: 1100px) {

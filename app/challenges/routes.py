@@ -11,6 +11,7 @@ from flask_login import current_user
 from app.challenges import bp
 from app.models import Difficulty, RoleType
 from app.services.challenges import get_published, list_published, list_topics
+from app.services.coach import MAX_HINTS_PER_CHALLENGE, hints_used
 from app.services.workspace import get_saved_code
 
 # The Monaco editor is loaded from a free public CDN, pinned to an exact
@@ -58,7 +59,7 @@ def library():
 @bp.route("/challenges/<slug>")
 def detail(slug):
     """A published challenge: the problem, its visible examples, and for
-    signed-in learners the code workspace (FR05).
+    signed-in learners the code workspace (FR05) and the AI Coach (5.9).
 
     Drafts and unpublished challenges return 404 Not Found, so their
     addresses reveal nothing. Hidden tests and the reference solution are
@@ -82,6 +83,18 @@ def detail(slug):
             "testsUrl": url_for("api.challenge_tests", slug=challenge.slug),
             "submitUrl": url_for("api.submit", slug=challenge.slug),
             "saveUrl": url_for("api.save_workspace_code", slug=challenge.slug),
+            "hintsUrl": url_for("api.request_hint", slug=challenge.slug),
+            # The page fills in the submission id when asking about one.
+            "explanationUrlTemplate": url_for(
+                "api.explain_submission", submission_id=0
+            ).replace("/0/", "/{id}/"),
+            "maxHints": MAX_HINTS_PER_CHALLENGE,
+            # Hints already received are shown again, so they are never
+            # lost when the learner leaves and comes back.
+            "hints": [
+                {"level": hint.level, "text": hint.text, "source": hint.source.value}
+                for hint in hints_used(current_user, challenge)
+            ],
             "workerUrl": url_for("static", filename="js/python-worker.js"),
             "monacoBase": MONACO_BASE,
         }
