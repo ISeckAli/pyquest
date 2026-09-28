@@ -3,6 +3,7 @@ Command-line tools for running PyQuest, used through the flask command:
 
     flask --app app grant-role someone@example.com instructor
     flask --app app add-topic "Strings" --order 1 --description "Working with text."
+    flask --app app seed
     flask --app app ai-check
     flask --app app coach-check
 
@@ -22,6 +23,7 @@ from app.models import Person, RoleType
 from app.services.ai_service import AIUnavailableError, generate, get_provider
 from app.services.challenges import ChallengeError, create_topic
 from app.services.coach_quality import run_quality_check
+from app.services.seed import seed_content
 
 # Longest part of a reply or reason printed per attempt.
 MAX_PRINTED_REPLY = 200
@@ -61,6 +63,20 @@ def register_commands(app):
         except ChallengeError as error:
             raise click.ClickException(str(error)) from error
         click.echo(f"Created topic '{topic.name}' (slug: {topic.slug}).")
+
+    @app.cli.command("seed")
+    def seed():
+        """Load the starter topics and challenges from app/seed_data.py.
+
+        Safe to run repeatedly: anything that already exists is skipped.
+        """
+        created = seed_content()
+        if not created:
+            click.echo("Nothing to add: all seed challenges already exist.")
+            return
+        for challenge in created:
+            click.echo(f"Added '{challenge.title}' ({challenge.topic.name}, {challenge.difficulty.label}).")
+        click.echo(f"\n{len(created)} challenges added and published.")
 
     @app.cli.command("ai-check")
     def ai_check():
