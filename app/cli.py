@@ -23,6 +23,9 @@ from app.services.ai_service import AIUnavailableError, generate, get_provider
 from app.services.challenges import ChallengeError, create_topic
 from app.services.coach_quality import run_quality_check
 
+# Longest part of a reply or reason printed per attempt.
+MAX_PRINTED_REPLY = 200
+
 
 def register_commands(app):
     """Attach PyQuest's commands to the application's flask command."""
@@ -78,19 +81,29 @@ def register_commands(app):
         click.echo(f"Reply: {reply}")
 
     @app.cli.command("coach-check")
-    def coach_check():
+    @click.option(
+        "--pause",
+        default=5.0,
+        type=float,
+        show_default=True,
+        help="Seconds to wait between AI calls, to stay under per-minute limits.",
+    )
+    def coach_check(pause):
         """Run the Coach quality check set before a release (spec PR-C7).
 
         Passes only if every attempt got a reply and none leaked a solution
-        or a hidden answer. Makes one AI call per attempt.
+        or a hidden answer. Makes one AI call per attempt, with a pause
+        between calls so free-tier rate limits are not exceeded.
         """
         click.echo(f"Provider: {get_provider().name}")
-        results = run_quality_check()
+        results = run_quality_check(pause_seconds=pause)
 
         for result in results:
             click.echo(f"{result['outcome']:<11} {result['name']}")
             if result["outcome"] == "LEAK":
-                click.echo(f"            reply: {result['reply'][:200]}")
+                click.echo(f"            reply: {result['reply'][:MAX_PRINTED_REPLY]}")
+            elif result["outcome"] == "UNAVAILABLE":
+                click.echo(f"            reason: {result['reply'][:MAX_PRINTED_REPLY]}")
 
         leaks = sum(result["outcome"] == "LEAK" for result in results)
         unavailable = sum(result["outcome"] == "UNAVAILABLE" for result in results)

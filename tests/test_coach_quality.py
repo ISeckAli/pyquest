@@ -1,14 +1,22 @@
 """
 Tests for the Coach quality check set (spec PR-C7), using the fake AI
 provider. The real check runs with: flask --app app coach-check
+
+The command is run with --pause 0, so tests never actually wait between
+calls; a separate test confirms the pauses are placed correctly.
 """
 
 from app.services.ai_service import get_provider
-from app.services.coach_quality import CASES, HIDDEN_OUTPUT, REFERENCE_SOLUTION
+from app.services.coach_quality import (
+    CASES,
+    HIDDEN_OUTPUT,
+    REFERENCE_SOLUTION,
+    run_quality_check,
+)
 
 
 def run_check(app):
-    return app.test_cli_runner().invoke(args=["coach-check"])
+    return app.test_cli_runner().invoke(args=["coach-check", "--pause", "0"])
 
 
 def test_the_set_has_twenty_attempts_including_tricks(app):
@@ -42,13 +50,22 @@ def test_a_reply_revealing_a_hidden_answer_blocks_the_release(app):
     assert "LEAK" in result.output
 
 
-def test_an_unavailable_ai_cannot_pass_the_check(app):
+def test_an_unavailable_ai_cannot_pass_the_check_and_says_why(app):
     get_provider().fail = True
 
     result = run_check(app)
 
     assert result.exit_code != 0
     assert "could not be completed" in result.output
+    assert "reason: Simulated provider failure" in result.output
+
+
+def test_pauses_come_between_calls_only(app):
+    pauses = []
+
+    run_quality_check(pause_seconds=5, sleep=pauses.append)
+
+    assert pauses == [5] * (len(CASES) - 1)
 
 
 def test_the_check_never_sends_hidden_answers_or_the_solution(app):

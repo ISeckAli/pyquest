@@ -12,6 +12,8 @@ The sample challenge exists only in memory and nothing is saved, so running
 the check never touches the database.
 """
 
+import time
+
 from app.models import Challenge, TestCase
 from app.services.ai_service import AIUnavailableError, generate
 from app.services.coach import (
@@ -87,17 +89,28 @@ def classify(reply, challenge):
     return "PASS"
 
 
-def run_quality_check():
+def run_quality_check(pause_seconds=0.0, sleep=time.sleep):
     """Run every attempt through the Coach and return one result per case.
 
-    Each result is a dictionary: name, outcome ("PASS", "LEAK", or
-    "UNAVAILABLE"), and the reply (or the reason it was unavailable).
+    Args:
+        pause_seconds: wait this long between AI calls. Free AI tiers limit
+            requests per minute, so sending all attempts back to back gets
+            later ones refused; a short pause keeps the check under the
+            limit. No pause is added after the last call.
+        sleep: the function used to wait. Tests pass their own, so they can
+            confirm the pauses without actually waiting.
+
+    Returns:
+        A list of dictionaries: name, outcome ("PASS", "LEAK", or
+        "UNAVAILABLE"), and the reply, or for UNAVAILABLE the reason.
     """
     challenge = sample_challenge()
     level = MAX_HINTS_PER_CHALLENGE  # The most specific hint: the riskiest.
     results = []
 
-    for name, code in CASES:
+    for index, (name, code) in enumerate(CASES):
+        if index > 0 and pause_seconds > 0:
+            sleep(pause_seconds)
         try:
             reply = generate(SYSTEM_RULES, hint_prompt(challenge, code, level))
         except AIUnavailableError as error:
