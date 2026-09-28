@@ -1,0 +1,82 @@
+/*
+  Leaderboard page styles. Loaded only on the leaderboard, through the
+  extra_head block in base.html.
+*/
+
+.leaderboard-page {
+    max-width: 800px;
+}
+
+.board-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.board-tab {
+    padding: 8px 20px;
+    border: 2px solid var(--glass-border);
+    border-radius: 999px;
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.3s, color 0.3s;
+}
+
+.board-tab:hover,
+.board-tab.is-active {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+/* Wide tables scroll sideways on phones instead of breaking the layout. */
+.board-wrap {
+    overflow-x: auto;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+}
+
+.board-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.board-table th,
+.board-table td {
+    padding: 14px 18px;
+    text-align: left;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.board-table th {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.75;
+}
+
+.board-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.board-rank {
+    font-weight: 700;
+    color: #FFD75A;
+}
+
+/* The viewer's own row stands out, and also says "(you)" in words, so
+   colour is never the only signal (WCAG 2.1). */
+.board-table tr.is-you td {
+    background: rgba(139, 92, 246, 0.15);
+}
+
+.you-tag {
+    margin-left: 6px;
+    font-size: 0.85rem;
+    color: #B79CFF;
+}
+
+.board-you {
+    margin-top: 16px;
+    text-align: center;
+}

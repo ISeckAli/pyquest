@@ -1,0 +1,73 @@
+{#
+  The public leaderboard (spec FR09), rendered by main.leaderboard_page.
+  Only display names, levels, and XP are shown. The tabs are plain links,
+  so each board has its own shareable address.
+#}
+{% extends "base.html" %}
+
+{% block title %}Leaderboard{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/leaderboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section leaderboard-page">
+    <h1 class="page-title">Leaderboard</h1>
+
+    <nav class="board-tabs" aria-label="Leaderboard period">
+        {% for value, label in periods %}
+            <a href="{{ url_for('main.leaderboard_page', period=value) }}"
+               class="board-tab {% if value == period %}is-active{% endif %}"
+               {% if value == period %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    {% if period == "week" %}
+        <p class="page-intro">XP earned since Monday (UTC), including mission bonuses.</p>
+    {% endif %}
+
+    {% if viewer_hidden %}
+        <p class="notice">
+            You are hidden from the leaderboard. You can change this in
+            <a href="{{ url_for('auth.settings') }}">Settings</a>.
+        </p>
+    {% endif %}
+
+    {% if top %}
+        <div class="board-wrap">
+            <table class="board-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Rank</th>
+                        <th scope="col">Learner</th>
+                        <th scope="col">Level</th>
+                        <th scope="col">XP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for standing in top %}
+                        <tr class="{% if standing.party_id == viewer_party_id %}is-you{% endif %}">
+                            <td class="board-rank">#{{ standing.rank }}</td>
+                            <td>
+                                {{ standing.display_name }}
+                                {% if standing.party_id == viewer_party_id %}<span class="you-tag">(you)</span>{% endif %}
+                            </td>
+                            <td>{{ standing.level }}</td>
+                            <td>{{ standing.xp }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No one has earned XP {% if period == "week" %}this week {% endif %}yet. Be the first!</p>
+    {% endif %}
+
+    {% if viewer_standing %}
+        <p class="board-you">
+            You are <strong>#{{ viewer_standing.rank }}</strong> with {{ viewer_standing.xp }} XP. Keep going!
+        </p>
+    {% endif %}
+</section>
+{% endblock %}
