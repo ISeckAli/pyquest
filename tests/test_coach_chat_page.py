@@ -1,6 +1,7 @@
 """
-Tests for how the AI Coach appears on the challenge page (spec 5.9).
-The buttons themselves run as JavaScript and are checked in the browser.
+Tests for how chat, review, and ratings appear on the challenge page (spec
+PR-C3, PR-C4, PR-C6). The buttons run as JavaScript and are checked in the
+browser.
 """
 
 import json
@@ -11,7 +12,7 @@ import pytest
 from app.extensions import db
 from app.models import LearnerProfile, Person, RoleType, UserAccount
 from app.services.challenges import add_test_case, create_challenge, create_topic, publish
-from app.services.coach import get_hint
+from app.services.coach_chat import ask_coach
 
 
 def make_learner():
@@ -36,13 +37,6 @@ def editor_config(html):
     return json.loads(match.group(1))
 
 
-def visible_text(html):
-    """The page with every run of spaces and line breaks collapsed to one
-    space, the way a browser displays text. Lets tests look for a sentence
-    without depending on how the template happens to wrap its lines."""
-    return " ".join(html.split())
-
-
 @pytest.fixture
 def challenge(app):
     topic = create_topic("Strings", sort_order=1)
@@ -61,31 +55,32 @@ def page(client, challenge):
     return client.get(f"/challenges/{challenge.slug}").get_data(as_text=True)
 
 
-def test_learners_get_the_coach_and_its_settings(client, challenge):
+def test_learners_get_chat_review_and_rating_settings(client, challenge):
     sign_in(client, make_learner())
 
     html = page(client, challenge)
     config = editor_config(html)
 
-    assert 'id="hint-button"' in html
-    assert "lowers the XP" in visible_text(html)
-    assert config["hintsUrl"] == "/api/challenges/reverse-a-string/hints"
-    assert config["explanationUrlTemplate"] == "/api/submissions/{id}/explanation"
-    assert config["maxHints"] == 3
-    assert config["hints"] == []
+    assert 'id="chat-form"' in html
+    assert 'id="review-button"' in html
+    assert "js/coach-chat.js" in html
+    assert config["chatUrl"] == "/api/challenges/reverse-a-string/chat"
+    assert config["reviewUrl"] == "/api/challenges/reverse-a-string/review"
+    assert config["ratingUrlTemplate"] == "/api/coach-messages/{id}/rating"
+    assert config["chat"] == []
+    assert config["review"] is None
 
 
-def test_hints_already_received_come_back_with_the_page(client, challenge):
+def test_earlier_conversation_comes_back_with_the_page(client, challenge):
     learner = make_learner()
-    get_hint(learner, challenge, "text = input()")
+    ask_coach(learner, challenge, "How do I start?", "text = input()")
     sign_in(client, learner)
 
-    hints = editor_config(page(client, challenge))["hints"]
+    chat = editor_config(page(client, challenge))["chat"]
 
-    assert len(hints) == 1
-    assert hints[0]["level"] == 1
-    assert hints[0]["source"] == "ai"
+    assert [message["sender"] for message in chat] == ["learner", "coach"]
+    assert chat[0]["text"] == "How do I start?"
 
 
-def test_visitors_do_not_see_the_coach(client, challenge):
-    assert 'id="hint-button"' not in page(client, challenge)
+def test_visitors_do_not_see_the_chat(client, challenge):
+    assert 'id="chat-form"' not in page(client, challenge)

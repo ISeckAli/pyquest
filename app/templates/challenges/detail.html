@@ -3,18 +3,14 @@
   preview with preview=True.
 
   Signed-in learners get the code workspace (spec FR05) and the AI Coach
-  (section 5.9). Their settings reach the JavaScript through a JSON script
-  block written with tojson, which escapes "<", so text containing
-  "</script>" cannot break out of the block. Visitors see an invitation to
-  log in instead.
+  (section 5.9): hints, chat, and a review after solving. Their settings
+  reach the JavaScript through a JSON script block written with tojson,
+  which escapes "<", so text containing "</script>" cannot break out of the
+  block. Visitors see an invitation to log in instead.
 
   Only visible test cases are shown as examples. Hidden tests and the
   reference solution are never used in this template, so they cannot leak
   into the page (spec FR06, section 5.9).
-
-  The description keeps the author's line breaks (white-space: pre-wrap)
-  and is escaped by Jinja2. Markdown formatting, which needs a sanitiser to
-  be safe, is added in the hardening part.
 #}
 {% extends "base.html" %}
 
@@ -23,7 +19,8 @@
 {% block extra_head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/challenge.css') }}">
     {% if can_solve %}
-        {# Read by challenge.js and sent as the X-CSRFToken header. #}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/coach.css') }}">
+        {# Read by the page scripts and sent as the X-CSRFToken header. #}
         <meta name="csrf-token" content="{{ csrf_token() }}">
     {% endif %}
 {% endblock %}
@@ -76,14 +73,39 @@
             {% if can_solve %}
                 <div class="panel">
                     <h2>AI Coach</h2>
+
+                    <h3 class="coach-section-title">Hints</h3>
                     <p class="field-hint coach-intro">
-                        Stuck? Each hint is more specific than the last. Each AI hint
-                        lowers the XP for your first solve by 20% (never below 40%). If
-                        the AI is unavailable you get a built-in hint instead, which is free.
+                        Each hint is more specific than the last. Each AI hint lowers the
+                        XP for your first solve by 20% (never below 40%). If the AI is
+                        unavailable you get a built-in hint instead, which is free.
                     </p>
                     <button type="button" id="hint-button" class="btn btn-secondary btn-small">Get a hint</button>
                     <p id="hint-status" class="run-status" role="status"></p>
                     <div id="hint-list" class="hint-list" aria-live="polite"></div>
+
+                    <h3 class="coach-section-title">Ask the Coach</h3>
+                    <p class="field-hint coach-intro">
+                        Ask about this challenge or Python in general. The Coach will
+                        guide you but never give the answer. Up to {{ editor_config.chatLimit }}
+                        messages a day. Please do not share personal information.
+                    </p>
+                    <div id="chat-log" class="chat-log" aria-live="polite"></div>
+                    <form id="chat-form" class="chat-form">
+                        <label for="chat-input" class="visually-hidden">Your question for the Coach</label>
+                        <input id="chat-input" type="text" maxlength="{{ editor_config.maxMessageLength }}"
+                               placeholder="Ask the Coach a question" autocomplete="off">
+                        <button type="submit" id="chat-send" class="btn btn-primary btn-small">Send</button>
+                    </form>
+                    <p id="chat-status" class="run-status" role="status"></p>
+
+                    <h3 class="coach-section-title">Review my solution</h3>
+                    <p class="field-hint coach-intro">
+                        Once you have solved the challenge, the Coach can suggest ways to make
+                        your code cleaner. It never changes your XP.
+                    </p>
+                    <button type="button" id="review-button" class="btn btn-secondary btn-small">Review my solution</button>
+                    <div id="review-output" aria-live="polite"></div>
                 </div>
             {% endif %}
         </div>
@@ -106,6 +128,7 @@
                 <script type="application/json" id="challenge-data">{{ editor_config | tojson }}</script>
                 <script src="{{ monaco_loader }}"></script>
                 <script src="{{ url_for('static', filename='js/challenge.js') }}"></script>
+                <script src="{{ url_for('static', filename='js/coach-chat.js') }}"></script>
             {% elif preview %}
                 <p class="notice">
                     Learners solve the challenge here with the code editor. It is not

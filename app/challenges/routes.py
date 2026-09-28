@@ -7,16 +7,36 @@ from operator import attrgetter
 
 from flask import abort, render_template, request, url_for
 from flask_login import current_user
+from sqlalchemy import select
 
 from app.challenges import bp
-from app.models import Difficulty, RoleType
+from app.extensions import db
+from app.models import CoachMessage, CoachMessageKind, Difficulty, RoleType
 from app.services.challenges import get_published, list_published, list_topics
 from app.services.coach import MAX_HINTS_PER_CHALLENGE, hints_used
+from app.services.coach_chat import CHAT_DAILY_LIMIT, MAX_MESSAGE_LENGTH, conversation
 from app.services.workspace import get_saved_code
 
 # The Monaco editor is loaded from a free public CDN, pinned to an exact
 # version so every learner gets the same editor (spec DR-11: $0 hosting).
 MONACO_BASE = "https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2"
+
+
+def _message_json(message):
+    """A Coach message as the page scripts need it."""
+    return {
+        "id": message.id,
+        "sender": message.sender.value,
+        "text": message.content,
+        "source": message.source.value,
+        "rating": message.rating,
+    }
+
+
+def _url_template(endpoint, **values):
+    """A URL with a {id} placeholder the page fills in, such as
+    /api/coach-messages/{id}/rating."""
+    return url_for(endpoint, **values).replace("/0/", "/{id}/")
 
 
 @bp.route("/challenges")
@@ -75,6 +95,14 @@ def detail(slug):
     editor_config = None
     if can_solve:
         saved = get_saved_code(current_user, challenge)
+        review = db.session.scalars(
+            select(CoachMessage).where(
+                CoachMessage.party_id == current_user.party_id,
+                CoachMessage.challenge_id == challenge.id,
+                CoachMessage.kind == CoachMessageKind.REVIEW,
+            )
+        ).first()
+
         editor_config = {
             # The editor opens with the learner's saved work when there is
             # any; "Reset code" goes back to the starter code.
@@ -83,20 +111,26 @@ def detail(slug):
             "testsUrl": url_for("api.challenge_tests", slug=challenge.slug),
             "submitUrl": url_for("api.submit", slug=challenge.slug),
             "saveUrl": url_for("api.save_workspace_code", slug=challenge.slug),
+            "workerUrl": url_for("static", filename="js/python-worker.js"),
+            "monacoBase": MONACO_BASE,
+            # AI Coach: hints (PR-C1) and failure explanations (PR-C2).
             "hintsUrl": url_for("api.request_hint", slug=challenge.slug),
-            # The page fills in the submission id when asking about one.
-            "explanationUrlTemplate": url_for(
-                "api.explain_submission", submission_id=0
-            ).replace("/0/", "/{id}/"),
+            "explanationUrlTemplate": _url_template("api.explain_submission", submission_id=0),
             "maxHints": MAX_HINTS_PER_CHALLENGE,
-            # Hints already received are shown again, so they are never
-            # lost when the learner leaves and comes back.
             "hints": [
                 {"level": hint.level, "text": hint.text, "source": hint.source.value}
                 for hint in hints_used(current_user, challenge)
             ],
-            "workerUrl": url_for("static", filename="js/python-worker.js"),
-            "monacoBase": MONACO_BASE,
+            # AI Coach: chat (PR-C4), review (PR-C3), and ratings (PR-C6).
+            # Earlier messages and any review come back with the page, so
+            # nothing is lost when the learner leaves and returns.
+            "chatUrl": url_for("api.chat", slug=challenge.slug),
+            "reviewUrl": url_for("api.review", slug=challenge.slug),
+            "ratingUrlTemplate": _url_template("api.rate", message_id=0),
+            "chatLimit": CHAT_DAILY_LIMIT,
+            "maxMessageLength": MAX_MESSAGE_LENGTH,
+            "chat": [_message_json(message) for message in conversation(current_user, challenge)],
+            "review": _message_json(review) if review is not None else None,
         }
 
     return render_template(

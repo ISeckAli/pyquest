@@ -1,0 +1,91 @@
+/*
+  AI Coach chat, review, and rating styles. Loaded only on challenge pages
+  for learners, through the extra_head block in base.html. Coach replies
+  reuse .coach-card from challenge.css.
+*/
+
+.coach-section-title {
+    margin: 22px 0 6px;
+    font-size: 1rem;
+    color: var(--blue);
+}
+
+.coach-section-title:first-of-type {
+    margin-top: 0;
+}
+
+.chat-log {
+    max-height: 360px;
+    margin-bottom: 10px;
+    overflow-y: auto;
+}
+
+/* The learner's own messages sit on the right, in a lighter bubble, so
+   the conversation reads like a chat. */
+.chat-bubble {
+    margin: 0 0 10px 15%;
+    padding: 10px 14px;
+    background: rgba(0, 212, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+}
+
+.chat-form {
+    display: flex;
+    gap: 10px;
+}
+
+.chat-form input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--glass);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: var(--text);
+    font: inherit;
+    outline: none;
+}
+
+.chat-form input:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.coach-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.8rem;
+}
+
+.coach-rating-label {
+    opacity: 0.7;
+}
+
+.rating-button {
+    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+/* The chosen rating is highlighted; aria-pressed drives both the look and
+   what screen readers announce. */
+.rating-button[aria-pressed="true"] {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: var(--purple);
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
