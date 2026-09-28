@@ -13,6 +13,7 @@ the tests can run in any order.
 """
 
 import pytest
+from flask import g
 
 from app import create_app
 from app.extensions import db
@@ -26,6 +27,19 @@ def app():
     runs once the test finishes, even if the test failed (teardown).
     """
     app = create_app("testing")
+
+    # Flask-Login caches the signed-in user in `g` for the rest of a
+    # request. In production every request gets a fresh `g`. In tests,
+    # the application context opened below stays open for the whole test
+    # (so tests can use the database between requests), and Flask reuses
+    # it for each test-client request, so `g` would carry the cached user
+    # from one request into the next. Clearing it at the start of each
+    # request makes tests behave like production: the signed-in user is
+    # always read fresh from the session, which matters whenever a test
+    # switches from one user to another.
+    @app.before_request
+    def _forget_cached_user():
+        g.pop("_login_user", None)
 
     # Database operations need an application context: Flask's way of
     # knowing which app (and therefore which database) is active.

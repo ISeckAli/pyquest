@@ -1,6 +1,7 @@
 """
 JSON endpoints for running, saving, and submitting challenges (spec FR05,
-FR06), and for instructors checking a reference solution (FR12).
+FR06), the AI Coach (section 5.9), and for instructors checking a reference
+solution (FR12).
 """
 
 from functools import wraps
@@ -10,9 +11,16 @@ from flask_login import current_user
 
 from app.api import bp
 from app.extensions import db
-from app.models import Challenge, RoleType
+from app.models import Challenge, RoleType, Submission
 from app.services.challenges import can_manage, get_published
-from app.services.grading import GradingError, grade_submission, runnable_tests
+from app.services.coach import (
+    MAX_HINTS_PER_CHALLENGE,
+    CoachError,
+    CoachLimitError,
+    explain_failure,
+    get_hint,
+)
+from app.services.grading import MAX_CODE_LENGTH, GradingError, grade_submission, runnable_tests
 from app.services.workspace import WorkspaceError, save_code
 
 
@@ -114,6 +122,60 @@ def submit(slug):
         return jsonify(error=str(error)), 400
 
     return jsonify(feedback)
+
+
+@bp.route("/challenges/<slug>/hints", methods=["POST"])
+@api_role_required(RoleType.LEARNER)
+def request_hint(slug):
+    """The learner's next progressive hint (spec PR-C1).
+
+    The learner's current code is sent so the hint can respond to it. A
+    request past the limit gets 429 Too Many Requests, the standard HTTP
+    status for a usage limit.
+    """
+    challenge = get_published(slug)
+    if challenge is None:
+        return _not_found()
+
+    payload = _json_payload()
+    if payload is None:
+        return jsonify(error="Send the request as JSON."), 400
+
+    code = payload.get("code", "")
+    if not isinstance(code, str) or len(code) > MAX_CODE_LENGTH:
+        return jsonify(error=f"Code must be text of at most {MAX_CODE_LENGTH} characters."), 400
+
+    try:
+        hint = get_hint(current_user, challenge, code)
+    except CoachLimitError as error:
+        return jsonify(error=str(error)), 429
+
+    return jsonify(
+        level=hint.level,
+        text=hint.text,
+        source=hint.source.value,
+        remaining=MAX_HINTS_PER_CHALLENGE - hint.level,
+    )
+
+
+@bp.route("/submissions/<int:submission_id>/explanation", methods=["POST"])
+@api_role_required(RoleType.LEARNER)
+def explain_submission(submission_id):
+    """"Why did this fail?" for one of the learner's failed submissions (PR-C2).
+
+    Another learner's submission returns 404 rather than 403, so the
+    endpoint does not even confirm that the submission exists.
+    """
+    submission = db.session.get(Submission, submission_id)
+    if submission is None or submission.party_id != current_user.party_id:
+        return jsonify(error="Submission not found."), 404
+
+    try:
+        message = explain_failure(current_user, submission)
+    except CoachError as error:
+        return jsonify(error=str(error)), 400
+
+    return jsonify(text=message.content, source=message.source.value)
 
 
 @bp.route("/instructor/challenges/<int:challenge_id>/reference-check")

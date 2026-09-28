@@ -1,6 +1,6 @@
 """
 Grading service: turns a learner's test results into a pass or fail, records
-the submission, and awards XP (spec FR06, FR07).
+the submission, and awards XP (spec FR06, FR07, PR-L3).
 
 How grading works with code that runs in the browser (decision DR-03):
 
@@ -17,10 +17,10 @@ problem. The server never runs learner code.
 
 import re
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.extensions import db
-from app.models import LearnerProfile, Submission, SubmissionStatus
+from app.models import ContentSource, Hint, LearnerProfile, Submission, SubmissionStatus
 from app.services.challenges import normalise_newlines
 
 MAX_CODE_LENGTH = 20_000
@@ -33,6 +33,13 @@ MAX_EXECUTION_MS = 60_000
 # into config.py with the rest of gamification in Part 9.
 LEVEL_XP_STEP = 100
 
+# Each AI hint used before the first solve reduces its XP by this share, but
+# never below MIN_XP_SHARE of the full value (spec PR-L3, tunable). Hints
+# stay useful, while solving unaided is worth more. Instructor fallback
+# hints cost nothing, since the learner did not use the AI.
+HINT_XP_PENALTY = 0.2
+MIN_XP_SHARE = 0.4
+
 # The error type at the start of a Python error message, such as the
 # "NameError" in "NameError: name 'x' is not defined".
 _ERROR_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,39}")
@@ -43,7 +50,7 @@ class GradingError(Exception):
 
 
 # ---------------------------------------------------------------------------
-# Comparing outputs and computing levels
+# Comparing outputs, levels, and XP
 # ---------------------------------------------------------------------------
 
 def normalise_output(text):
@@ -64,6 +71,27 @@ def level_for_xp(total_xp):
     while total_xp >= LEVEL_XP_STEP * level * (level + 1) // 2:
         level += 1
     return level
+
+
+def ai_hints_used(party_id, challenge_id):
+    """How many AI hints (not fallback hints) the learner had for a challenge."""
+    return db.session.scalar(
+        select(func.count()).select_from(Hint).where(
+            Hint.party_id == party_id,
+            Hint.challenge_id == challenge_id,
+            Hint.source == ContentSource.AI,
+        )
+    )
+
+
+def xp_after_hints(xp_value, ai_hints):
+    """The XP a first solve earns after using this many AI hints.
+
+    For example, 10 XP after 2 hints: 10 x (1 - 0.2 x 2) = 6. Rounded to the
+    nearest whole number, halves rounding up.
+    """
+    share = max(MIN_XP_SHARE, 1 - HINT_XP_PENALTY * ai_hints)
+    return int(xp_value * share + 0.5)
 
 
 def _error_category(error):
@@ -145,13 +173,14 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
     total_count = len(challenge.test_cases)
     passed_all = passed_count == total_count
     profile = _learner_profile(account)
+    ai_hints = ai_hints_used(account.party_id, challenge.id)
 
     # XP only for the first passing submission (spec FR07), so repeating
     # a solved challenge cannot farm XP. Checked before this submission is
     # added, so it only looks at earlier attempts.
     xp_awarded = 0
     if passed_all and not _already_solved(account.party_id, challenge.id):
-        xp_awarded = challenge.xp_value
+        xp_awarded = xp_after_hints(challenge.xp_value, ai_hints)
         profile.total_xp += xp_awarded
         profile.level = level_for_xp(profile.total_xp)
 
@@ -164,6 +193,7 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
         total_count=total_count,
         error_category=first_error,
         execution_ms=execution_ms,
+        hints_used=ai_hints,
         xp_awarded=xp_awarded,
     )
     db.session.add(submission)
@@ -173,10 +203,14 @@ def grade_submission(account, challenge, code, results, execution_ms=None):
     db.session.commit()
 
     feedback = {
+        # Lets the page ask the Coach about this exact submission (PR-C2).
+        "submission_id": submission.id,
         "passed": passed_all,
         "passed_count": passed_count,
         "total_count": total_count,
         "xp_awarded": xp_awarded,
+        "xp_full_value": challenge.xp_value,
+        "hints_used": ai_hints,
         "total_xp": profile.total_xp,
         "level": profile.level,
         "tests": feedback_tests,
