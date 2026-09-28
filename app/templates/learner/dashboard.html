@@ -1,7 +1,10 @@
 {#
   Learner dashboard (spec FR14, with FR07 to FR10), rendered by
-  learner.dashboard: level and progress, XP, streak, today's missions, and
-  the badge collection. Charts and Coach summaries arrive in Part 10.
+  learner.dashboard: level and progress, XP, streak, today's missions,
+  progress charts, and the badge collection.
+
+  Every chart has a text summary beneath it with the same numbers, since
+  screen readers cannot read a picture (WCAG 2.1).
 #}
 {% extends "base.html" %}
 
@@ -9,6 +12,7 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/analytics.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -56,6 +60,63 @@
         </ul>
         <p class="field-hint">Missions reset at midnight in your timezone. Only first solves count.</p>
         <a class="btn btn-primary btn-small" href="{{ url_for('challenges.library') }}">Find a challenge</a>
+    </div>
+
+    <div class="panel">
+        <h2>Your progress</h2>
+        {% if analytics.total_submissions %}
+            <p class="field-hint">
+                {{ analytics.total_submissions }} {{ "submission" if analytics.total_submissions == 1 else "submissions" }},
+                {{ analytics.pass_rate }}% passed.
+            </p>
+
+            <div class="chart-grid">
+                <figure class="chart-card">
+                    <figcaption>Pass rate by week</figcaption>
+                    <div class="chart-box">
+                        <canvas id="accuracy-chart" role="img"
+                                aria-label="Line chart of your pass rate for each of the last 8 weeks"></canvas>
+                    </div>
+                </figure>
+
+                <figure class="chart-card">
+                    <figcaption>Most common errors</figcaption>
+                    {% if analytics.errors %}
+                        <div class="chart-box">
+                            <canvas id="errors-chart" role="img"
+                                    aria-label="Bar chart of your most common error types"></canvas>
+                        </div>
+                        <ul class="chart-summary">
+                            {% for error in analytics.errors %}
+                                <li>{{ error.name }}: {{ error.count }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="field-hint">No errors yet. Nice work!</p>
+                    {% endif %}
+                </figure>
+
+                <figure class="chart-card">
+                    <figcaption>Topics</figcaption>
+                    <div class="chart-box">
+                        <canvas id="topics-chart" role="img"
+                                aria-label="Bar chart of challenges solved in each topic"></canvas>
+                    </div>
+                    <ul class="chart-summary">
+                        {% for topic in analytics.topics %}
+                            <li>{{ topic.name }}: {{ topic.solved }} of {{ topic.total }} solved</li>
+                        {% endfor %}
+                    </ul>
+                </figure>
+            </div>
+
+            {# Chart data for dashboard-charts.js, written with tojson so it is safe data. #}
+            <script type="application/json" id="analytics-data">{{ analytics | tojson }}</script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+            <script src="{{ url_for('static', filename='js/dashboard-charts.js') }}"></script>
+        {% else %}
+            <p class="field-hint">Submit a solution to see your progress charts here.</p>
+        {% endif %}
     </div>
 
     <div class="panel">

@@ -12,6 +12,7 @@ from app.auth.decorators import role_required
 from app.extensions import db
 from app.learner import bp
 from app.models import LearnerProfile, RoleType
+from app.services.analytics import learner_analytics
 from app.services.gamification import BADGES, displayed_streak, earned_badges
 from app.services.grading import LEVEL_XP_STEP
 from app.services.missions import describe, todays_missions
@@ -39,9 +40,8 @@ def dashboard():
     """The learner's home page (spec FR14, FR07 to FR10).
 
     Shows level and progress to the next level, XP, the current and longest
-    streak, today's missions, and the badge collection. Visiting creates
-    today's missions if they do not exist yet. Charts and Coach progress
-    summaries are added in Part 10.
+    streak, today's missions, progress charts, and the badge collection.
+    Visiting creates today's missions if they do not exist yet.
     """
     now = datetime.now(UTC)
     person = current_user.party
@@ -64,6 +64,7 @@ def dashboard():
         progress=_level_progress(profile.total_xp, profile.level),
         streak=displayed_streak(profile, person, now),
         missions=[describe(mission) for mission in todays_missions(current_user, now)],
+        analytics=learner_analytics(current_user, now),
         earned=earned,
         # Locked badges show what to aim for next. Per-topic badges appear
         # once earned, since their list depends on the topics that exist.

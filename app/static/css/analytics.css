@@ -1,0 +1,36 @@
+/*
+  Progress chart styles for the learner dashboard.
+*/
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+
+.chart-card {
+    margin: 0;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+}
+
+.chart-card figcaption {
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: var(--blue);
+}
+
+/* Chart.js fills its container, so the container sets the height. */
+.chart-box {
+    position: relative;
+    height: 220px;
+}
+
+.chart-summary {
+    margin-top: 10px;
+    padding-left: 18px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
