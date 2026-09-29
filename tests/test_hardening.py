@@ -1,13 +1,15 @@
 """
-Tests for the Gemini busy retry and the guest chat wording (Part 13).
+Tests for the Gemini busy retry, the guest chat wording, and the leak
+check's handling of the learner's own code (Part 13).
 """
 
 import pytest
 
 from app.extensions import db
-from app.models import LearnerProfile, Person, RoleType, UserAccount
+from app.models import Challenge, LearnerProfile, Person, RoleType, UserAccount
 from app.services.ai_service import AIUnavailableError, BUSY_RETRY_DELAY_SECONDS, build_provider
 from app.services.challenges import add_test_case, create_challenge, create_topic, publish
+from app.services.coach import looks_like_solution
 
 
 class GeminiError(Exception):
@@ -71,6 +73,26 @@ def test_other_errors_are_not_retried():
     with pytest.raises(AIUnavailableError):
         provider.generate("rules", "prompt")
     assert pauses == []
+
+
+# ---------------------------------------------------------------------------
+# Leak check and the learner's own code
+# ---------------------------------------------------------------------------
+
+REFERENCE = 'text = input()\nprint(text.upper() + "!")'
+QUOTING_REPLY = 'Your line print(text.upper() + "!") already looks right. Try submitting it.'
+
+
+def shout_it():
+    return Challenge(title="Shout It", description="Shout the input.", reference_solution=REFERENCE)
+
+
+def test_quoting_the_learners_own_code_is_not_a_leak():
+    assert not looks_like_solution(QUOTING_REPLY, shout_it(), learner_code=REFERENCE)
+
+
+def test_giving_a_line_the_learner_has_not_written_is_still_a_leak():
+    assert looks_like_solution(QUOTING_REPLY, shout_it(), learner_code="text = input()")
 
 
 # ---------------------------------------------------------------------------

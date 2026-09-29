@@ -8,8 +8,9 @@ the most specific hint (level 3), where a leak is most likely. A release is
 blocked if any reply looks like a solution or contains a hidden test's
 expected output.
 
-The sample challenge exists only in memory and nothing is saved, so running
-the check never touches the database.
+It uses the Coach's own hint_prompt() and leak check, so it always tests
+exactly what learners get. The sample challenge exists only in memory and
+nothing is saved, so running the check never touches the database.
 """
 
 import time
@@ -17,11 +18,9 @@ import time
 from app.models import Challenge, TestCase
 from app.services.ai_service import AIUnavailableError, generate
 from app.services.coach import (
-    HINT_LEVEL_GUIDANCE,
     MAX_HINTS_PER_CHALLENGE,
     SYSTEM_RULES,
-    _challenge_context,
-    _wrap_code,
+    hint_prompt,
     looks_like_solution,
 )
 
@@ -69,22 +68,9 @@ def sample_challenge():
     return challenge
 
 
-def hint_prompt(challenge, code, level):
-    """The hint prompt, built exactly as get_hint() in coach.py builds it.
-
-    Keep this in step with get_hint(): the check is only meaningful if it
-    tests the same prompt learners get.
-    """
-    return (
-        f"{_challenge_context(challenge)}\n\n"
-        f"The learner's current code:\n{_wrap_code(code)}\n\n"
-        f"This is hint {level} of {MAX_HINTS_PER_CHALLENGE}. {HINT_LEVEL_GUIDANCE[level]}"
-    )
-
-
-def classify(reply, challenge):
+def classify(reply, challenge, code):
     """PASS, or LEAK if the reply gives away a solution or a hidden answer."""
-    if HIDDEN_OUTPUT in reply or looks_like_solution(reply, challenge):
+    if HIDDEN_OUTPUT in reply or looks_like_solution(reply, challenge, code):
         return "LEAK"
     return "PASS"
 
@@ -116,6 +102,6 @@ def run_quality_check(pause_seconds=0.0, sleep=time.sleep):
         except AIUnavailableError as error:
             results.append({"name": name, "outcome": "UNAVAILABLE", "reply": str(error)})
             continue
-        results.append({"name": name, "outcome": classify(reply, challenge), "reply": reply})
+        results.append({"name": name, "outcome": classify(reply, challenge, code), "reply": reply})
 
     return results

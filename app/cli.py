@@ -13,7 +13,7 @@ administrator, but the very first administrator cannot be granted through
 the website because no administrator exists yet. Anyone able to run
 commands on the server is already trusted, so this is the standard safe
 way to create the first instructor and administrator accounts. Day-to-day
-role changes move to the admin pages (Part 11).
+role changes use the admin pages.
 """
 
 import click
@@ -27,8 +27,9 @@ from app.services.coach_quality import run_quality_check
 from app.services.guest import GUEST_RETENTION_DAYS, delete_expired_guests
 from app.services.seed import seed_content
 
-# Longest part of a reply or reason printed per attempt.
-MAX_PRINTED_REPLY = 200
+# Longest part of a reply or reason printed per attempt: long enough to
+# read a whole leaking reply.
+MAX_PRINTED_REPLY = 600
 
 
 def register_commands(app):
