@@ -15,7 +15,7 @@ from sqlalchemy import func, select
 
 from app.extensions import db
 from app.models import Challenge, ChallengeStatus, Topic
-from app.seed_data import SEED_CHALLENGES
+from app.seed_data import SEED_CHALLENGES, SEED_TOPICS
 from app.services.challenges import create_topic
 from app.services.grading import normalise_output
 from app.services.seed import seed_content
@@ -29,7 +29,7 @@ def test_seeding_creates_published_challenges_with_tests_and_hints(app):
     created = seed_content()
 
     assert len(created) == len(SEED_CHALLENGES)
-    assert count(Topic) == 3
+    assert count(Topic) == len(SEED_TOPICS)
     for challenge in created:
         assert challenge.status == ChallengeStatus.PUBLISHED
         assert len(challenge.visible_tests) >= 1
@@ -49,7 +49,13 @@ def test_an_existing_topic_is_reused(app):
 
     seed_content()
 
-    assert count(Topic) == 3
+    assert count(Topic) == len(SEED_TOPICS)
+
+
+def test_challenge_titles_are_unique():
+    titles = [spec["title"] for spec in SEED_CHALLENGES]
+
+    assert len(titles) == len(set(titles))
 
 
 @pytest.mark.parametrize("spec", SEED_CHALLENGES, ids=lambda spec: spec["title"])
