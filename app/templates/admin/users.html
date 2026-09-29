@@ -13,7 +13,13 @@
 
 {% block content %}
 <section class="page-section">
-    <h1 class="page-title page-title-left">Users</h1>
+    <div class="toolbar">
+        <h1 class="page-title page-title-left">Users</h1>
+        <div class="button-row">
+            <a class="btn btn-secondary btn-small" href="{{ url_for('admin.reports') }}">Reports</a>
+            <a class="btn btn-secondary btn-small" href="{{ url_for('admin.audit') }}">Audit log</a>
+        </div>
+    </div>
 
     <form class="admin-search" method="get" role="search">
         <label for="q" class="visually-hidden">Search by name or email</label>

@@ -1,10 +1,13 @@
 """
-Admin pages: the user list, each user's page, and the actions on it
-(spec FR13). Actions are POST forms with CSRF tokens, and each redirects
-back afterwards (Post/Redirect/Get), so refreshing never repeats one.
+Admin pages: the user list, each user's page and the actions on it
+(spec FR13), the audit log (PR-M1), and engagement reports with CSV export
+(FR15). Actions are POST forms with CSRF tokens, and each redirects back
+afterwards (Post/Redirect/Get), so refreshing never repeats one.
 """
 
-from flask import abort, flash, redirect, render_template, request, url_for
+from datetime import UTC, datetime
+
+from flask import Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.admin import bp
@@ -18,6 +21,12 @@ from app.services.admin import (
     list_people,
     revoke_role,
     set_active,
+)
+from app.services.reports import (
+    DEFAULT_PERIOD,
+    PERIODS,
+    engagement_summary,
+    learners_csv,
 )
 
 ADMIN = RoleType.SYSTEM_ADMINISTRATOR
@@ -54,6 +63,10 @@ def _role_or_400(value):
 def _back_to(person):
     return redirect(url_for("admin.user", person_id=person.id))
 
+
+# ---------------------------------------------------------------------------
+# Users (FR13)
+# ---------------------------------------------------------------------------
 
 @bp.route("/users")
 @role_required(ADMIN)
@@ -129,3 +142,44 @@ def status(person_id):
             "success" if active else "info",
         )
     return _back_to(person)
+
+
+# ---------------------------------------------------------------------------
+# Audit log (PR-M1) and reports (FR15)
+# ---------------------------------------------------------------------------
+
+@bp.route("/audit")
+@role_required(ADMIN)
+def audit():
+    """Every administrative action, newest first."""
+    return render_template(
+        "admin/audit.html", entries=audit_entries(), action_labels=ACTION_LABELS
+    )
+
+
+def _period():
+    """The report period from the address, or the default if not a valid one."""
+    days = request.args.get("days", type=int)
+    return days if days in PERIODS else DEFAULT_PERIOD
+
+
+@bp.route("/reports")
+@role_required(ADMIN)
+def reports():
+    """Engagement over the last 7, 30, or 90 days."""
+    return render_template(
+        "admin/reports.html", summary=engagement_summary(_period()), periods=PERIODS
+    )
+
+
+@bp.route("/reports/learners.csv")
+@role_required(ADMIN)
+def learners_export():
+    """Download every registered learner's progress as a spreadsheet file."""
+    filename = f"pyquest-learners-{datetime.now(UTC):%Y-%m-%d}.csv"
+    return Response(
+        learners_csv(),
+        mimetype="text/csv",
+        # attachment makes the browser download the file rather than show it.
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

@@ -77,3 +77,57 @@
 .history-date {
     display: block;
 }
+
+/* ---------------------------------------------------------------------------
+   Reports
+   --------------------------------------------------------------------------- */
+.period-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.period-tab {
+    padding: 8px 18px;
+    border: 2px solid var(--glass-border);
+    border-radius: 999px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.period-tab:hover,
+.period-tab.is-active {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.report-card {
+    padding: 20px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+}
+
+.report-label {
+    font-size: 0.85rem;
+    opacity: 0.75;
+}
+
+.report-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--blue);
+}
+
+.report-note {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}

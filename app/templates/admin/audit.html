@@ -1,0 +1,56 @@
+{#
+  The audit log (spec PR-M1), rendered by admin.audit: every administrative
+  action, newest first. Entries are never edited or deleted.
+#}
+{% extends "base.html" %}
+
+{% block title %}Admin: Audit log{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('admin.users') }}">Users</a>
+        <span aria-hidden="true">/</span>
+        Audit log
+    </nav>
+    <h1 class="page-title page-title-left">Audit log</h1>
+
+    {% if entries %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">When (UTC)</th>
+                        <th scope="col">Action</th>
+                        <th scope="col">By</th>
+                        <th scope="col">About</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.created_at.strftime("%b %d, %Y %H:%M") }}</td>
+                            <td>
+                                {{ action_labels.get(entry.action, entry.action) }}{% if entry.details %}: {{ entry.details }}{% endif %}
+                            </td>
+                            <td>{{ entry.actor.display_name if entry.actor else "The system" }}</td>
+                            <td>
+                                {% if entry.target %}
+                                    <a href="{{ url_for('admin.user', person_id=entry.target.id) }}">{{ entry.target.display_name }}</a>
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No administrative actions yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

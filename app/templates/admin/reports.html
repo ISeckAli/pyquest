@@ -1,0 +1,69 @@
+{#
+  Engagement report (spec FR15), rendered by admin.reports. The period
+  links reload the page with ?days=, so each view has its own address.
+#}
+{% extends "base.html" %}
+
+{% block title %}Admin: Reports{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('admin.users') }}">Users</a>
+        <span aria-hidden="true">/</span>
+        Reports
+    </nav>
+
+    <div class="toolbar">
+        <h1 class="page-title page-title-left">Engagement</h1>
+        <a class="btn btn-primary btn-small" href="{{ url_for('admin.learners_export') }}">Download learners (CSV)</a>
+    </div>
+
+    <nav class="period-tabs" aria-label="Report period">
+        {% for days in periods %}
+            <a href="{{ url_for('admin.reports', days=days) }}"
+               class="period-tab {% if days == summary.days %}is-active{% endif %}"
+               {% if days == summary.days %}aria-current="page"{% endif %}>Last {{ days }} days</a>
+        {% endfor %}
+    </nav>
+
+    <div class="report-grid">
+        <article class="report-card">
+            <p class="report-label">Learners</p>
+            <p class="report-value">{{ summary.learners }}</p>
+            <p class="report-note">{{ summary.new_learners }} new in this period</p>
+        </article>
+        <article class="report-card">
+            <p class="report-label">Active learners</p>
+            <p class="report-value">{{ summary.active_learners }}</p>
+            <p class="report-note">submitted at least once</p>
+        </article>
+        <article class="report-card">
+            <p class="report-label">Guests</p>
+            <p class="report-value">{{ summary.guests }}</p>
+            <p class="report-note">tried PyQuest without signing up</p>
+        </article>
+        <article class="report-card">
+            <p class="report-label">Submissions</p>
+            <p class="report-value">{{ summary.submissions }}</p>
+            <p class="report-note">{{ summary.solves }} passed</p>
+        </article>
+        <article class="report-card">
+            <p class="report-label">Pass rate</p>
+            <p class="report-value">{% if summary.pass_rate is not none %}{{ summary.pass_rate }}%{% else %}—{% endif %}</p>
+            <p class="report-note">of all submissions</p>
+        </article>
+        <article class="report-card">
+            <p class="report-label">AI hints</p>
+            <p class="report-value">{{ summary.ai_hints }}</p>
+            <p class="report-note">given by the Coach</p>
+        </article>
+    </div>
+    <p class="field-hint">Figures cover registered learners; guests are counted separately.</p>
+</section>
+{% endblock %}
