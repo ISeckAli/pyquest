@@ -12,6 +12,7 @@ from flask_login import current_user
 from app.api import bp
 from app.extensions import db
 from app.models import Challenge, RoleType, Submission
+from app.rate_limit import rate_limit
 from app.services.challenges import can_manage, get_published
 from app.services.coach import (
     MAX_HINTS_PER_CHALLENGE,
@@ -76,6 +77,7 @@ def challenge_tests(slug):
 
 @bp.route("/challenges/<slug>/code", methods=["PUT"])
 @api_role_required(RoleType.LEARNER)
+@rate_limit("code-save")
 def save_workspace_code(slug):
     """Save the learner's working copy of their code (spec FR05).
 
@@ -100,6 +102,7 @@ def save_workspace_code(slug):
 
 @bp.route("/challenges/<slug>/submissions", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
+@rate_limit("submission")
 def submit(slug):
     """Grade a submission and return feedback (spec FR06)."""
     challenge = get_published(slug)
@@ -126,6 +129,7 @@ def submit(slug):
 
 @bp.route("/challenges/<slug>/hints", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
+@rate_limit("hint")
 def request_hint(slug):
     """The learner's next progressive hint (spec PR-C1).
 
@@ -162,6 +166,7 @@ def request_hint(slug):
 
 @bp.route("/submissions/<int:submission_id>/explanation", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
+@rate_limit("explanation")
 def explain_submission(submission_id):
     """"Why did this fail?" for one of the learner's failed submissions (PR-C2).
 

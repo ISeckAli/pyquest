@@ -10,6 +10,7 @@ from flask_login import current_user
 from app.api import bp
 from app.api.routes import _json_payload, _not_found, api_role_required
 from app.models import RoleType
+from app.rate_limit import rate_limit
 from app.services.challenges import get_published
 from app.services.coach import CoachError, CoachLimitError
 from app.services.coach_chat import CoachNotFoundError, ask_coach, rate_message, review_solution
@@ -31,6 +32,7 @@ def message_json(message):
 
 @bp.route("/challenges/<slug>/chat", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
+@rate_limit("chat")
 def chat(slug):
     """Ask the Coach a question about this challenge (PR-C4).
 
@@ -69,6 +71,7 @@ def chat(slug):
 
 @bp.route("/challenges/<slug>/review", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
+@rate_limit("review")
 def review(slug):
     """Review the learner's passing code (PR-C3)."""
     challenge = get_published(slug)

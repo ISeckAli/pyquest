@@ -16,6 +16,7 @@ started with `flask --app app run`.
 import os
 
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from app.config import config_by_name
 from app.extensions import csrf, db, login_manager, migrate
@@ -46,6 +47,13 @@ def create_app(config_name=None):
 
     if config_name == "production":
         _require_production_settings(app)
+        # In production every request arrives through the host's proxy, so
+        # the connection's address is the proxy's, not the visitor's.
+        # ProxyFix reads the visitor's real address (and whether they used
+        # HTTPS) from the headers the proxy adds. It trusts exactly one
+        # proxy, so a visitor cannot fake their address by adding their own
+        # headers. Rate limits (app/rate_limit.py) depend on this.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
     # Bind the shared extension objects to this specific app instance.
     db.init_app(app)

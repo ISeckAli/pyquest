@@ -10,6 +10,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 from app.auth import bp
 from app.auth.forms import LoginForm, PasswordChangeForm, ProfileForm, RegistrationForm
 from app.models import RoleType
+from app.rate_limit import rate_limit
 from app.services.account import (
     AccountSettingsError,
     change_password,
@@ -21,6 +22,7 @@ from app.services.guest import convert_guest, create_guest, is_guest
 
 
 @bp.route("/register", methods=["GET", "POST"])
+@rate_limit("register")
 def register():
     """Show the sign-up form and create a learner account (spec FR01).
 
@@ -65,6 +67,7 @@ def register():
 
 
 @bp.route("/guest", methods=["POST"])
+@rate_limit("guest")
 def start_guest():
     """Start a guest session with one click and no sign-up (spec PR-A3).
 
@@ -83,8 +86,13 @@ def start_guest():
 
 
 @bp.route("/login", methods=["GET", "POST"])
+@rate_limit("login")
 def login():
-    """Show the login form and sign the user in (spec FR02)."""
+    """Show the login form and sign the user in (spec FR02).
+
+    Submitting the form is rate limited per visitor, on top of the per-
+    account lockout, so passwords cannot be guessed across many accounts.
+    """
     if current_user.is_authenticated:
         return redirect(_home_url(current_user))
 
