@@ -13,6 +13,7 @@ from app.models import RoleType
 from app.services.challenges import get_published
 from app.services.coach import CoachError, CoachLimitError
 from app.services.coach_chat import CoachNotFoundError, ask_coach, rate_message, review_solution
+from app.services.coach_ratings import rate_hint
 from app.services.grading import MAX_CODE_LENGTH
 
 
@@ -71,19 +72,31 @@ def review(slug):
     return jsonify(message_json(message))
 
 
-@bp.route("/coach-messages/<int:message_id>/rating", methods=["POST"])
-@api_role_required(RoleType.LEARNER)
-def rate(message_id):
-    """Thumbs up or down on one of the learner's Coach replies (PR-C6)."""
+def _rate(rate_function, item_id):
+    """Shared handling for both rating endpoints."""
     payload = _json_payload()
     if payload is None:
         return jsonify(error="Send the rating as JSON."), 400
 
     try:
-        message = rate_message(current_user, message_id, payload.get("rating"))
+        item = rate_function(current_user, item_id, payload.get("rating"))
     except CoachNotFoundError as error:
         return jsonify(error=str(error)), 404
     except CoachError as error:
         return jsonify(error=str(error)), 400
 
-    return jsonify(rating=message.rating)
+    return jsonify(rating=item.rating)
+
+
+@bp.route("/coach-messages/<int:message_id>/rating", methods=["POST"])
+@api_role_required(RoleType.LEARNER)
+def rate(message_id):
+    """Thumbs up or down on one of the learner's Coach replies (PR-C6)."""
+    return _rate(rate_message, message_id)
+
+
+@bp.route("/hints/<int:hint_id>/rating", methods=["POST"])
+@api_role_required(RoleType.LEARNER)
+def rate_hint_route(hint_id):
+    """Thumbs up or down on one of the learner's hints (PR-C6)."""
+    return _rate(rate_hint, hint_id)

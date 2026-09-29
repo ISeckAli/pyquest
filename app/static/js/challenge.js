@@ -12,7 +12,8 @@
   - Autosave: the code is saved shortly after the learner stops typing, so
     leaving the page and coming back never loses work.
   - AI Coach: progressive hints, and "Why did this fail?" after a failed
-    submission. Every Coach reply is labelled as AI-generated or built-in.
+    submission. Every Coach reply is labelled as AI-generated or built-in,
+    and can be rated with a thumbs up or down (PR-C6).
 
   Everything added to the page uses textContent, never HTML, so program
   output and AI replies are displayed as plain text and can never be run
@@ -100,11 +101,52 @@
     }
   }
 
+  // Thumbs up and down for a Coach reply (spec PR-C6). aria-pressed tells
+  // screen readers which rating is chosen, and drives the highlight.
+  function ratingControls(urlTemplate, id, currentRating) {
+    const wrapper = element("div", "coach-rating");
+    wrapper.append(element("span", "coach-rating-label", "Helpful?"));
+
+    const buttons = {};
+    for (const [rating, symbol, label] of [
+      ["up", "👍", "Helpful"],
+      ["down", "👎", "Not helpful"],
+    ]) {
+      const button = element("button", "rating-button", symbol);
+      button.type = "button";
+      button.setAttribute("aria-label", label);
+      button.setAttribute("aria-pressed", String(currentRating === rating));
+      button.addEventListener("click", async () => {
+        try {
+          const response = await fetch(urlTemplate.replace("{id}", id), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: jsonHeaders(),
+            body: JSON.stringify({ rating }),
+          });
+          if (response.ok) {
+            for (const [value, other] of Object.entries(buttons)) {
+              other.setAttribute("aria-pressed", String(value === rating));
+            }
+          }
+        } catch {
+          // A failed rating is not worth interrupting the learner for.
+        }
+      });
+      buttons[rating] = button;
+      wrapper.append(button);
+    }
+    return wrapper;
+  }
+
   // A labelled Coach reply. The label always says whether the AI wrote it
-  // (spec section 5.9).
-  function coachCard(label, text) {
+  // (spec section 5.9). An optional rating control goes underneath.
+  function coachCard(label, text, rating) {
     const card = element("div", "coach-card");
     card.append(element("p", "coach-label", label), element("p", "coach-text", text));
+    if (rating) {
+      card.append(rating);
+    }
     return card;
   }
 
@@ -312,7 +354,8 @@
   }
 
   function showHint(hint) {
-    hintListElement.append(coachCard(hintLabel(hint), hint.text));
+    const rating = hint.id ? ratingControls(config.hintRatingUrlTemplate, hint.id, hint.rating) : null;
+    hintListElement.append(coachCard(hintLabel(hint), hint.text, rating));
   }
 
   function updateHintButton() {
@@ -376,7 +419,8 @@
         }
         const data = await response.json();
         const label = data.source === "ai" ? "AI Coach · AI-generated" : "Built-in explanation";
-        output.replaceChildren(coachCard(label, data.text));
+        const rating = ratingControls(config.ratingUrlTemplate, data.id, data.rating);
+        output.replaceChildren(coachCard(label, data.text, rating));
         // Each failed submission gets one explanation, so the button goes.
         button.remove();
       } catch {

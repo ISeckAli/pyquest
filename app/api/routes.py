@@ -131,7 +131,7 @@ def request_hint(slug):
 
     The learner's current code is sent so the hint can respond to it. A
     request past the limit gets 429 Too Many Requests, the standard HTTP
-    status for a usage limit.
+    status for a usage limit. The hint's id lets the page rate it (PR-C6).
     """
     challenge = get_published(slug)
     if challenge is None:
@@ -151,9 +151,11 @@ def request_hint(slug):
         return jsonify(error=str(error)), 429
 
     return jsonify(
+        id=hint.id,
         level=hint.level,
         text=hint.text,
         source=hint.source.value,
+        rating=hint.rating,
         remaining=MAX_HINTS_PER_CHALLENGE - hint.level,
     )
 
@@ -164,7 +166,8 @@ def explain_submission(submission_id):
     """"Why did this fail?" for one of the learner's failed submissions (PR-C2).
 
     Another learner's submission returns 404 rather than 403, so the
-    endpoint does not even confirm that the submission exists.
+    endpoint does not even confirm that the submission exists. The
+    explanation's id lets the page rate it (PR-C6).
     """
     submission = db.session.get(Submission, submission_id)
     if submission is None or submission.party_id != current_user.party_id:
@@ -175,7 +178,12 @@ def explain_submission(submission_id):
     except CoachError as error:
         return jsonify(error=str(error)), 400
 
-    return jsonify(text=message.content, source=message.source.value)
+    return jsonify(
+        id=message.id,
+        text=message.content,
+        source=message.source.value,
+        rating=message.rating,
+    )
 
 
 @bp.route("/instructor/challenges/<int:challenge_id>/reference-check")

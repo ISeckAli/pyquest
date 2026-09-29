@@ -118,7 +118,13 @@ def detail(slug):
             "explanationUrlTemplate": _url_template("api.explain_submission", submission_id=0),
             "maxHints": MAX_HINTS_PER_CHALLENGE,
             "hints": [
-                {"level": hint.level, "text": hint.text, "source": hint.source.value}
+                {
+                    "id": hint.id,
+                    "level": hint.level,
+                    "text": hint.text,
+                    "source": hint.source.value,
+                    "rating": hint.rating,
+                }
                 for hint in hints_used(current_user, challenge)
             ],
             # AI Coach: chat (PR-C4), review (PR-C3), and ratings (PR-C6).
@@ -127,6 +133,7 @@ def detail(slug):
             "chatUrl": url_for("api.chat", slug=challenge.slug),
             "reviewUrl": url_for("api.review", slug=challenge.slug),
             "ratingUrlTemplate": _url_template("api.rate", message_id=0),
+            "hintRatingUrlTemplate": _url_template("api.rate_hint_route", hint_id=0),
             "chatLimit": CHAT_DAILY_LIMIT,
             "maxMessageLength": MAX_MESSAGE_LENGTH,
             "chat": [_message_json(message) for message in conversation(current_user, challenge)],

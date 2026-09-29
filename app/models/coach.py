@@ -5,9 +5,12 @@ AI Coach models (spec section 5.9, section 7).
                    or from the instructor's fallback hints (PR-C1)
     CoachMessage   a Coach reply or a learner's chat message: failure
                    explanations (PR-C2), chat (PR-C4), code reviews (PR-C3),
-                   and later progress summaries (PR-C5)
+                   and progress summaries (PR-C5)
     AIUsage        how many AI calls a learner made per day, so the free AI
                    quota is shared fairly (spec section 5.9, limits)
+
+Hints and Coach replies both carry the learner's thumbs up or down
+(spec PR-C6).
 """
 
 from datetime import date, datetime
@@ -38,7 +41,7 @@ class CoachMessageKind(StrEnum):
     EXPLANATION = "explanation"  # "Why did this fail?" (PR-C2)
     CHAT = "chat"  # Ask the Coach (PR-C4)
     REVIEW = "review"  # Code review after passing (PR-C3)
-    SUMMARY = "summary"  # Progress coaching (PR-C5, Part 10)
+    SUMMARY = "summary"  # Progress coaching (PR-C5)
 
 
 class MessageSender(StrEnum):
@@ -64,6 +67,10 @@ class Hint(db.Model):
 
     text: Mapped[str] = mapped_column(Text)
     source: Mapped[ContentSource] = mapped_column(_enum_type(ContentSource))
+
+    # The learner's thumbs up or down on this hint (spec PR-C6).
+    rating: Mapped[Optional[str]] = mapped_column(String(10))
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
     def __repr__(self):
