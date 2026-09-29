@@ -60,6 +60,11 @@ def create_app(config_name=None):
     login_manager.init_app(app)
     csrf.init_app(app)
 
+    # Security headers on every response (spec PR-N2).
+    from app.security import register_security_headers
+
+    register_security_headers(app)
+
     # Importing the models package registers every table with SQLAlchemy.
     # Without this import, migrations would not see the models and
     # db.create_all() in the tests would create no tables. It also registers
