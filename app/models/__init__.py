@@ -10,9 +10,11 @@ Models are split into modules by feature area, matching the blueprint
 structure: identity (people, accounts, roles), challenge (topics,
 challenges, test cases, fallback hints), submission (graded attempts),
 saved_code (each learner's working copy), coach (hints, Coach messages, AI
-usage), and gamification (earned badges, daily missions).
+usage), gamification (earned badges, daily missions), and audit (the log
+of administrative actions).
 """
 
+from app.models.audit import AuditLog
 from app.models.challenge import (
     Challenge,
     ChallengeStatus,
@@ -45,6 +47,7 @@ from app.models.submission import Submission, SubmissionStatus
 # is expected to import, and tells linters these imports are intentional.
 __all__ = [
     "AIUsage",
+    "AuditLog",
     "Challenge",
     "ChallengeStatus",
     "CoachMessage",
