@@ -15,6 +15,7 @@ from app.models import CoachMessage, CoachMessageKind, Difficulty, RoleType
 from app.services.challenges import get_published, list_published, list_topics
 from app.services.coach import MAX_HINTS_PER_CHALLENGE, hints_used
 from app.services.coach_chat import CHAT_DAILY_LIMIT, MAX_MESSAGE_LENGTH, conversation
+from app.services.guest import GUEST_CHAT_LIMIT, is_guest
 from app.services.workspace import get_saved_code
 
 # The Monaco editor is loaded from a free public CDN, pinned to an exact
@@ -102,6 +103,7 @@ def detail(slug):
                 CoachMessage.kind == CoachMessageKind.REVIEW,
             )
         ).first()
+        guest = is_guest(current_user)
 
         editor_config = {
             # The editor opens with the learner's saved work when there is
@@ -134,7 +136,10 @@ def detail(slug):
             "reviewUrl": url_for("api.review", slug=challenge.slug),
             "ratingUrlTemplate": _url_template("api.rate", message_id=0),
             "hintRatingUrlTemplate": _url_template("api.rate_hint_route", hint_id=0),
-            "chatLimit": CHAT_DAILY_LIMIT,
+            # Guests have a small total allowance rather than a daily one
+            # (spec PR-A3), so the page states whichever applies.
+            "chatLimit": GUEST_CHAT_LIMIT if guest else CHAT_DAILY_LIMIT,
+            "chatLimitIsGuest": guest,
             "maxMessageLength": MAX_MESSAGE_LENGTH,
             "chat": [_message_json(message) for message in conversation(current_user, challenge)],
             "review": _message_json(review) if review is not None else None,

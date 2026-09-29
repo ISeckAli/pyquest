@@ -87,8 +87,14 @@
                     <h3 class="coach-section-title">Ask the Coach</h3>
                     <p class="field-hint coach-intro">
                         Ask about this challenge or Python in general. The Coach will
-                        guide you but never give the answer. Up to {{ editor_config.chatLimit }}
-                        messages a day. Please do not share personal information.
+                        guide you but never give the answer.
+                        {% if editor_config.chatLimitIsGuest %}
+                            As a guest you can send {{ editor_config.chatLimit }} messages.
+                            <a href="{{ url_for('auth.register') }}">Create a free account</a> for more.
+                        {% else %}
+                            Up to {{ editor_config.chatLimit }} messages a day.
+                        {% endif %}
+                        Please do not share personal information.
                     </p>
                     <div id="chat-log" class="chat-log" aria-live="polite"></div>
                     <form id="chat-form" class="chat-form">

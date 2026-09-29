@@ -20,6 +20,8 @@ What gets sent to a provider is decided by the Coach service
 tests, reference solutions, or personal details.
 """
 
+import time
+
 from flask import current_app
 
 # Longest part of a provider's error message kept for logs and diagnostics.
@@ -27,6 +29,14 @@ MAX_ERROR_DETAIL = 300
 
 # Gemini rejects requests that allow less time than this to reply.
 GEMINI_MIN_TIMEOUT_SECONDS = 10
+
+# Gemini answers 503 ("this model is experiencing high demand") when it is
+# busy, which usually clears within seconds. Such a request is tried once
+# more after this pause before giving up. Timeouts are not retried (the
+# learner has already waited), and neither are other errors, which would
+# not fix themselves.
+GEMINI_BUSY_STATUS = 503
+BUSY_RETRY_DELAY_SECONDS = 1.5
 
 
 class AIUnavailableError(Exception):
@@ -57,7 +67,7 @@ class GeminiProvider(AIProvider):
 
     name = "gemini"
 
-    def __init__(self, api_key, model, timeout_seconds):
+    def __init__(self, api_key, model, timeout_seconds, sleep=time.sleep):
         # Imported here rather than at the top of the module, so the app
         # and the test suite start without loading Google's library when
         # Gemini is not the configured provider.
@@ -66,6 +76,9 @@ class GeminiProvider(AIProvider):
 
         self._types = types
         self._model = model
+        # How to wait before a retry. Tests pass their own, so they can
+        # check the retry without actually waiting.
+        self._sleep = sleep
 
         # Never below Gemini's minimum, even if the setting is lowered.
         # The library takes its timeout in milliseconds.
@@ -75,32 +88,41 @@ class GeminiProvider(AIProvider):
             http_options=types.HttpOptions(timeout=int(timeout * 1000)),
         )
 
-    def generate(self, system_instruction, prompt):
+    def _request(self, system_instruction, prompt):
         types = self._types
-        try:
-            response = self._client.models.generate_content(
-                model=self._model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    # Low randomness: hints should be consistent and on
-                    # topic rather than creative.
-                    temperature=0.4,
-                    max_output_tokens=1024,
-                    # Automatic function calling lets a model trigger code
-                    # in the application. PyQuest never gives the model any
-                    # functions to call, so it is switched off explicitly.
-                    automatic_function_calling=types.AutomaticFunctionCallingConfig(
-                        disable=True
-                    ),
+        return self._client.models.generate_content(
+            model=self._model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                # Low randomness: hints should be consistent and on topic
+                # rather than creative.
+                temperature=0.4,
+                max_output_tokens=1024,
+                # Automatic function calling lets a model trigger code in
+                # the application. PyQuest never gives the model any
+                # functions to call, so it is switched off explicitly.
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(
+                    disable=True
                 ),
-            )
-        except Exception as error:
-            # Deliberately broad: whatever goes wrong inside the provider
-            # (network, timeout, quota, a changed API), the caller only
-            # needs to know that no answer is available and fall back.
-            detail = f"{type(error).__name__}: {error}"[:MAX_ERROR_DETAIL]
-            raise AIUnavailableError(f"Gemini request failed. {detail}") from error
+            ),
+        )
+
+    def generate(self, system_instruction, prompt):
+        for attempt in (1, 2):
+            try:
+                response = self._request(system_instruction, prompt)
+                break
+            except Exception as error:
+                # Deliberately broad: whatever goes wrong inside the
+                # provider (network, timeout, quota, a changed API), the
+                # caller only needs to know that no answer is available and
+                # fall back. Only a first "busy" answer is worth one retry.
+                if attempt == 1 and getattr(error, "code", None) == GEMINI_BUSY_STATUS:
+                    self._sleep(BUSY_RETRY_DELAY_SECONDS)
+                    continue
+                detail = f"{type(error).__name__}: {error}"[:MAX_ERROR_DETAIL]
+                raise AIUnavailableError(f"Gemini request failed. {detail}") from error
 
         text = (response.text or "").strip()
         if not text:
