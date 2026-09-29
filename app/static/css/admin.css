@@ -1,0 +1,79 @@
+/*
+  Admin page styles. Builds on instructor.css, which admin pages also load
+  for tables, pills, and action buttons.
+*/
+
+.admin-search {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.admin-search input[type="search"],
+.admin-select {
+    padding: 10px 12px;
+    background: var(--glass);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: var(--text);
+    font: inherit;
+}
+
+.admin-search input[type="search"] {
+    flex: 1;
+    min-width: 220px;
+}
+
+.admin-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+}
+
+.detail-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 20px;
+}
+
+.detail-list dt {
+    opacity: 0.7;
+}
+
+.role-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-grant {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.history-list {
+    list-style: none;
+}
+
+.history-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.history-date,
+.history-actor {
+    font-size: 0.85rem;
+    opacity: 0.7;
+}
+
+.history-date {
+    display: block;
+}

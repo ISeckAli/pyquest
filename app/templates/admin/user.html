@@ -1,0 +1,109 @@
+{#
+  One user's admin page (spec FR13, PR-M1), rendered by admin.user: details,
+  roles, account status, and the audit history about this person. Every
+  action is a small POST form with a CSRF token.
+#}
+{% extends "base.html" %}
+
+{% block title %}Admin: {{ person.display_name }}{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section challenge-page">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('admin.users') }}">Users</a>
+        <span aria-hidden="true">/</span>
+        {{ person.display_name }}
+    </nav>
+    <h1 class="page-title page-title-left">{{ person.display_name }}</h1>
+
+    <div class="panel">
+        <h2>Details</h2>
+        <dl class="detail-list">
+            <dt>Email</dt>
+            <dd>{{ person.email }}</dd>
+            <dt>Joined</dt>
+            <dd>{{ person.created_at.strftime("%b %d, %Y") }}</dd>
+            <dt>Account</dt>
+            <dd>
+                {% if person.is_guest %}Guest (temporary){% else %}Registered{% endif %}
+            </dd>
+        </dl>
+    </div>
+
+    <div class="panel">
+        <h2>Roles</h2>
+        {% for role in person.roles %}
+            <div class="role-row">
+                <span class="pill">{{ role_labels[role.role_type] }}</span>
+                {% if not (is_self and role.role_type == RoleType.SYSTEM_ADMINISTRATOR) %}
+                    <form class="inline-form" method="post"
+                          action="{{ url_for('admin.revoke', person_id=person.id, role=role.role_type.value) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-link-danger">Remove</button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="empty-state">No roles.</p>
+        {% endfor %}
+
+        {% if missing_roles %}
+            <form class="admin-grant" method="post" action="{{ url_for('admin.grant', person_id=person.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label for="role" class="visually-hidden">Role to grant</label>
+                <select id="role" name="role" class="admin-select">
+                    {% for role in missing_roles %}
+                        <option value="{{ role.value }}">{{ role_labels[role] }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-secondary btn-small">Grant role</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>Account</h2>
+        {% if person.account is none %}
+            <p>This person has no login account.</p>
+        {% elif is_self %}
+            <p>This is your account. You cannot deactivate yourself.</p>
+        {% elif person.account.is_active %}
+            <p>Active. Deactivating signs them out and stops them logging in; their data is kept.</p>
+            <form method="post" action="{{ url_for('admin.status', person_id=person.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="active" value="0">
+                <button type="submit" class="btn btn-danger btn-small">Deactivate account</button>
+            </form>
+        {% else %}
+            <p><span class="pill pill-status-unpublished">Deactivated</span></p>
+            <form method="post" action="{{ url_for('admin.status', person_id=person.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="active" value="1">
+                <button type="submit" class="btn btn-primary btn-small">Reactivate account</button>
+            </form>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>History</h2>
+        {% if history %}
+            <ul class="history-list">
+                {% for entry in history %}
+                    <li>
+                        <span class="history-date">{{ entry.created_at.strftime("%b %d, %Y %H:%M") }} UTC</span>
+                        {{ action_labels.get(entry.action, entry.action) }}{% if entry.details %}: {{ entry.details }}{% endif %}
+                        <span class="history-actor">by {{ entry.actor.display_name if entry.actor else "the system" }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="empty-state">No administrative changes yet.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

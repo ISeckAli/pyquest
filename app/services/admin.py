@@ -79,12 +79,14 @@ def set_active(actor, person, active):
     in; its data is kept (spec FR13).
 
     Raises:
-        AdminError: if an administrator tries to deactivate their own account.
+        AdminError: if the person has no login account, or an administrator
+            tries to deactivate their own account.
     """
+    account = person.account
+    if account is None:
+        raise AdminError(f"{person.display_name} has no login account.")
     if not active and person.id == actor.party_id:
         raise AdminError("You cannot deactivate your own account.")
-
-    account = person.account
     if account.is_active == active:
         return
 
@@ -116,8 +118,10 @@ def list_people(search="", include_guests=False):
     return db.session.scalars(statement).all()
 
 
-def audit_entries(limit=200):
-    """The most recent audit entries, newest first."""
-    return db.session.scalars(
-        select(AuditLog).order_by(AuditLog.created_at.desc(), AuditLog.id.desc()).limit(limit)
-    ).all()
+def audit_entries(limit=200, target=None):
+    """The most recent audit entries, newest first; only about one person
+    when target is given."""
+    statement = select(AuditLog).order_by(AuditLog.created_at.desc(), AuditLog.id.desc())
+    if target is not None:
+        statement = statement.where(AuditLog.target_party_id == target.id)
+    return db.session.scalars(statement.limit(limit)).all()

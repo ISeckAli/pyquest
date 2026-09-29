@@ -1,0 +1,69 @@
+{#
+  Admin user list (spec FR13), rendered by admin.users. The search is a GET
+  form, so a filtered list has its own address and needs no CSRF token.
+#}
+{% extends "base.html" %}
+
+{% block title %}Admin: Users{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/instructor.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <h1 class="page-title page-title-left">Users</h1>
+
+    <form class="admin-search" method="get" role="search">
+        <label for="q" class="visually-hidden">Search by name or email</label>
+        <input id="q" name="q" type="search" value="{{ search }}" placeholder="Search by name or email">
+        <label class="admin-check">
+            <input type="checkbox" name="guests" value="1" {% if include_guests %}checked{% endif %}>
+            Include guests
+        </label>
+        <button type="submit" class="btn btn-secondary btn-small">Search</button>
+    </form>
+
+    {% if people %}
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Roles</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for person in people %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('admin.user', person_id=person.id) }}">{{ person.display_name }}</a>
+                                {% if person.is_guest %}<span class="pill">Guest</span>{% endif %}
+                            </td>
+                            <td>{{ person.email }}</td>
+                            <td>
+                                {% for role in person.roles %}
+                                    <span class="pill">{{ role_labels[role.role_type] }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% if person.account is none %}No login account
+                                {% elif person.account.is_active %}Active
+                                {% else %}<span class="pill pill-status-unpublished">Deactivated</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ person.created_at.strftime("%b %d, %Y") }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">No one matches that search.</p>
+    {% endif %}
+</section>
+{% endblock %}
