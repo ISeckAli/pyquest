@@ -1,0 +1,107 @@
+{#
+  The privacy page (spec section 10), rendered by main.privacy. Every
+  statement here describes what the code actually does; figures such as
+  guest_days come from the code rather than being typed in.
+#}
+{% extends "base.html" %}
+
+{% block title %}Privacy{% endblock %}
+
+{% block content %}
+<section class="page-section legal-page">
+    <h1 class="page-title page-title-left">Privacy</h1>
+    <p class="field-hint">Last updated September 2026.</p>
+
+    <p>
+        PyQuest is a free, educational project for learning Python. This page
+        explains, in plain language, what it stores about you, why, and who else
+        sees it.
+    </p>
+
+    <h2>The short version</h2>
+    <ul>
+        <li>No ads, no tracking or analytics cookies, and your data is never sold.</li>
+        <li>Your code runs in your own browser, not on our server.</li>
+        <li>The AI Coach never receives your name, email address, or password.</li>
+        <li>Guest accounts, and everything in them, are deleted after {{ guest_days }} days.</li>
+    </ul>
+
+    <h2>What we store</h2>
+    <ul>
+        <li><strong>Your account:</strong> display name, email address, timezone, and whether you
+            appear on the leaderboard. Your password is never stored, only a secure,
+            one-way scrambled version of it (a hash).</li>
+        <li><strong>Your learning:</strong> code you save and submit, test results, error types,
+            XP, level, streaks, badges, daily missions, hints, messages with the Coach, and your
+            ratings of Coach replies.</li>
+        <li><strong>Administrative records:</strong> if an administrator changes your roles or
+            account status, the change is logged, with who made it and when.</li>
+    </ul>
+    <p>
+        We use this only to run PyQuest: to keep you signed in, save your progress, grade
+        your solutions, show your dashboard, and help instructors improve challenges.
+    </p>
+
+    <h2>Cookies</h2>
+    <p>
+        PyQuest uses one cookie, which keeps you signed in and protects forms from being
+        submitted by other websites. It ends after 30 minutes of inactivity. There are no
+        advertising, tracking, or analytics cookies.
+    </p>
+
+    <h2>The AI Coach</h2>
+    <p>
+        When you ask for a hint, an explanation, a code review, a progress summary, or chat
+        with the Coach, PyQuest sends Google's Gemini AI service the challenge description,
+        its visible examples, your code, and your message or statistics. It never sends
+        your name, email address, or password, and never the challenge's hidden tests or
+        model answer.
+    </p>
+    <p>
+        PyQuest uses Gemini's free tier, under which Google may use what is sent to improve
+        its services. <strong>Please do not put personal information in your code or chat
+        messages.</strong>
+    </p>
+
+    <h2>Your code</h2>
+    <p>
+        Your Python code runs inside your own browser. The server receives your code (to save
+        it and record your submissions) and the output it produced, but never runs it.
+    </p>
+
+    <h2>What others can see</h2>
+    <p>
+        The public leaderboard shows your display name, level, and XP, never your email
+        address. You can hide yourself from it at any time in Settings. Instructors can see
+        statistics about how learners do on their challenges, and administrators can see
+        account details to manage the site.
+    </p>
+
+    <h2>Guests</h2>
+    <p>
+        "Try as Guest" creates a temporary account with no name or email. Guests can send
+        {{ guest_chat_limit }} Coach chat messages. Guest accounts and all their data are deleted
+        after {{ guest_days }} days, unless you create a free account first, which keeps your
+        progress.
+    </p>
+
+    <h2>Security</h2>
+    <p>
+        PyQuest uses encrypted connections (HTTPS) when deployed, protects every form against
+        forgery, limits repeated attempts to log in or sign up, and signs you out after 30
+        minutes of inactivity.
+    </p>
+
+    <h2>Your choices</h2>
+    <p>
+        You can change your display name, timezone, and leaderboard visibility in Settings.
+        To have your account deleted, contact the developer through the project's
+        <a href="https://github.com/ISeckAli/pyquest" rel="noopener">GitHub page</a>.
+    </p>
+
+    <h2>Changes</h2>
+    <p>
+        If this page changes, the date at the top will be updated.
+    </p>
+</section>
+{% endblock %}

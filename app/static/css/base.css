@@ -1,0 +1,106 @@
+/*
+  Site-wide additions loaded on every page: accessibility helpers (spec
+  NFR04, WCAG 2.1), footer links, and the legal pages.
+*/
+
+/* ---------------------------------------------------------------------------
+   Accessibility
+   --------------------------------------------------------------------------- */
+
+/* "Skip to main content": hidden above the page until it receives keyboard
+   focus (the first Tab press), then shown, so keyboard and screen-reader
+   users can jump past the header links. */
+.skip-link {
+    position: absolute;
+    top: -60px;
+    left: 16px;
+    z-index: 1000;
+    padding: 10px 16px;
+    background: var(--purple);
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.skip-link:focus {
+    top: 16px;
+}
+
+/* A clear outline on whatever the keyboard is on. :focus-visible shows it
+   for keyboard use but not for mouse clicks. */
+:focus-visible {
+    outline: 3px solid var(--blue);
+    outline-offset: 3px;
+}
+
+/* The skip link's target receives focus programmatically; it needs no ring. */
+main:focus {
+    outline: none;
+}
+
+/* People who set their device to reduce motion get no animations or
+   transitions. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   Footer links
+   --------------------------------------------------------------------------- */
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 8px;
+}
+
+.footer-links a {
+    color: var(--text);
+    opacity: 0.8;
+    text-decoration: none;
+}
+
+.footer-links a:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------------
+   Legal pages
+   --------------------------------------------------------------------------- */
+.legal-page {
+    max-width: 760px;
+    line-height: 1.7;
+}
+
+.legal-page h2 {
+    margin: 28px 0 8px;
+    font-size: 1.2rem;
+    color: var(--blue);
+}
+
+.legal-page p {
+    margin-bottom: 12px;
+}
+
+.legal-page ul {
+    margin: 0 0 12px;
+    padding-left: 22px;
+}
+
+.legal-page li {
+    margin-bottom: 6px;
+}
+
+.legal-page a {
+    color: var(--blue);
+}

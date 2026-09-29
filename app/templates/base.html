@@ -28,9 +28,11 @@
     <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     {# url_for builds the path from Flask's static folder, so links keep
        working even if the site is later served under a different path.
-       style.css holds the theme; components.css builds on it. #}
+       style.css holds the theme; components.css builds on it; base.css adds
+       site-wide accessibility helpers and footer and legal-page styles. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     {% if current_user.is_authenticated and current_user.is_guest %}
         <link rel="stylesheet" href="{{ url_for('static', filename='css/guest.css') }}">
     {% endif %}
@@ -39,13 +41,17 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    {# The first thing a keyboard reaches: jumps past the header links to the
+       page's content (WCAG 2.1, "bypass blocks"). Hidden until focused. #}
+    <a class="skip-link" href="#main">Skip to main content</a>
+
     {# Decorative glowing blobs behind all page content. aria-hidden hides
        them from screen readers, since they carry no information. #}
     <div class="blob blob-purple" aria-hidden="true"></div>
     <div class="blob blob-coral" aria-hidden="true"></div>
 
     <header class="site-header">
-        <nav class="nav">
+        <nav class="nav" aria-label="Main">
             <a class="nav-brand" href="{{ url_for('main.index') }}">PyQuest</a>
             <div class="nav-links">
                 {% if current_user.is_authenticated %}
@@ -85,7 +91,8 @@
         </nav>
     </header>
 
-    <main>
+    {# tabindex="-1" lets the skip link move keyboard focus here. #}
+    <main id="main" tabindex="-1">
         {# Reminds guests their progress is temporary, on every page, with
            the way to keep it (spec PR-A3). #}
         {% if current_user.is_authenticated and current_user.is_guest %}
@@ -112,6 +119,11 @@
     </main>
 
     <footer class="site-footer">
+        <nav class="footer-links" aria-label="Footer">
+            <a href="{{ url_for('main.privacy') }}">Privacy</a>
+            <a href="{{ url_for('main.terms') }}">Terms</a>
+            <a href="https://github.com/ISeckAli/pyquest" rel="noopener">Source code</a>
+        </nav>
         <p>&copy; 2026 PyQuest &mdash; Cyber Learning Arcade</p>
     </footer>
 </body>

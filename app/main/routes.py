@@ -12,6 +12,7 @@ from flask_login import current_user
 
 from app.main import bp
 from app.models import RoleType
+from app.services.guest import GUEST_CHAT_LIMIT, GUEST_RETENTION_DAYS
 from app.services.leaderboard import ALL_TIME, PERIODS, THIS_WEEK, leaderboard
 
 
@@ -47,6 +48,26 @@ def favicon():
     browser then remembers it.
     """
     return redirect(url_for("static", filename="favicon.svg"), code=301)
+
+
+@bp.route("/privacy")
+def privacy():
+    """What PyQuest stores, why, and what it shares (spec section 10).
+
+    Figures such as the guest retention period come from the code, so the
+    page can never disagree with what the site actually does.
+    """
+    return render_template(
+        "main/privacy.html",
+        guest_days=GUEST_RETENTION_DAYS,
+        guest_chat_limit=GUEST_CHAT_LIMIT,
+    )
+
+
+@bp.route("/terms")
+def terms():
+    """The terms of use for this free educational project."""
+    return render_template("main/terms.html")
 
 
 @bp.route("/leaderboard")
