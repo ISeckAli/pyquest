@@ -1,5 +1,5 @@
 """
-Views for registration, login, logout, and account settings.
+Views for registration, login, logout, guest access, and account settings.
 """
 
 from urllib.parse import urlsplit
@@ -17,12 +17,18 @@ from app.services.account import (
     update_profile,
 )
 from app.services.auth import AuthError, RegistrationError, authenticate, register_learner
+from app.services.guest import convert_guest, create_guest, is_guest
 
 
 @bp.route("/register", methods=["GET", "POST"])
 def register():
-    """Show the sign-up form and create a learner account (spec FR01)."""
-    if current_user.is_authenticated:
+    """Show the sign-up form and create a learner account (spec FR01).
+
+    A guest who signs up keeps their account and all their progress: it is
+    converted into a real account rather than replaced (spec PR-A3).
+    """
+    converting = is_guest(current_user)
+    if current_user.is_authenticated and not converting:
         return redirect(_home_url(current_user))
 
     form = RegistrationForm()
@@ -31,18 +37,49 @@ def register():
     # form's checks (and whose CSRF token is valid).
     if form.validate_on_submit():
         try:
-            account = register_learner(
-                form.display_name.data, form.email.data, form.password.data
-            )
+            if converting:
+                account = convert_guest(
+                    current_user._get_current_object(),
+                    form.display_name.data,
+                    form.email.data,
+                    form.password.data,
+                )
+            else:
+                account = register_learner(
+                    form.display_name.data, form.email.data, form.password.data
+                )
         except RegistrationError as error:
             # Show the service's message beside the field it concerns.
             getattr(form, error.field).errors.append(str(error))
         else:
+            # A fresh session in both cases, so nothing from before sign-up
+            # carries over into the signed-in session.
             _start_session(account)
-            flash("Welcome to PyQuest! Your account is ready.", "success")
+            if converting:
+                flash("Your account is ready, and your progress came with you.", "success")
+            else:
+                flash("Welcome to PyQuest! Your account is ready.", "success")
             return redirect(_home_url(account))
 
-    return render_template("auth/register.html", form=form)
+    return render_template("auth/register.html", form=form, converting=converting)
+
+
+@bp.route("/guest", methods=["POST"])
+def start_guest():
+    """Start a guest session with one click and no sign-up (spec PR-A3).
+
+    A POST with a CSRF token, like logout, so another website cannot create
+    guest accounts through a visitor's browser.
+    """
+    if current_user.is_authenticated:
+        return redirect(_home_url(current_user))
+
+    _start_session(create_guest())
+    flash(
+        "You are exploring as a guest. Create a free account any time to keep your progress.",
+        "info",
+    )
+    return redirect(url_for("challenges.library"))
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -90,12 +127,18 @@ def settings():
     """Profile details and password change (spec PR-A5).
 
     Open to every signed-in account, whatever its role, since everyone
-    manages their own settings. The page holds two independent forms. Each
-    uses a prefix ("profile-", "password-") so their fields and buttons have
-    different names, and only the form whose button was pressed is
-    processed: saving a timezone never tries to validate empty password
-    fields.
+    manages their own settings. Guests are sent to sign up instead: they
+    have no password to change, and signing up gives them a real profile.
+
+    The page holds two independent forms. Each uses a prefix ("profile-",
+    "password-") so their fields and buttons have different names, and only
+    the form whose button was pressed is processed: saving a timezone never
+    tries to validate empty password fields.
     """
+    if is_guest(current_user):
+        flash("Create a free account to choose your settings. Your progress comes with you.", "info")
+        return redirect(url_for("auth.register"))
+
     person = current_user.party
 
     # obj=person pre-fills the fields from the person's current values on

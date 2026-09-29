@@ -15,6 +15,7 @@ from app.services.coach import CoachError, CoachLimitError
 from app.services.coach_chat import CoachNotFoundError, ask_coach, rate_message, review_solution
 from app.services.coach_ratings import rate_hint
 from app.services.grading import MAX_CODE_LENGTH
+from app.services.guest import GUEST_CHAT_LIMIT, guest_chat_remaining, is_guest
 
 
 def message_json(message):
@@ -31,10 +32,20 @@ def message_json(message):
 @bp.route("/challenges/<slug>/chat", methods=["POST"])
 @api_role_required(RoleType.LEARNER)
 def chat(slug):
-    """Ask the Coach a question about this challenge (PR-C4)."""
+    """Ask the Coach a question about this challenge (PR-C4).
+
+    Guests get a small allowance (spec PR-A3), which protects the free AI
+    quota while still letting visitors try the Coach.
+    """
     challenge = get_published(slug)
     if challenge is None:
         return _not_found()
+
+    if is_guest(current_user) and guest_chat_remaining(current_user) <= 0:
+        return jsonify(
+            error=f"Guests can send {GUEST_CHAT_LIMIT} messages. "
+            "Create a free account to keep chatting with the Coach."
+        ), 429
 
     payload = _json_payload()
     if payload is None:

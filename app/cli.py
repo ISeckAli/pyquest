@@ -4,6 +4,7 @@ Command-line tools for running PyQuest, used through the flask command:
     flask --app app grant-role someone@example.com instructor
     flask --app app add-topic "Strings" --order 1 --description "Working with text."
     flask --app app seed
+    flask --app app cleanup-guests
     flask --app app ai-check
     flask --app app coach-check
 
@@ -23,6 +24,7 @@ from app.models import Person, RoleType
 from app.services.ai_service import AIUnavailableError, generate, get_provider
 from app.services.challenges import ChallengeError, create_topic
 from app.services.coach_quality import run_quality_check
+from app.services.guest import GUEST_RETENTION_DAYS, delete_expired_guests
 from app.services.seed import seed_content
 
 # Longest part of a reply or reason printed per attempt.
@@ -77,6 +79,19 @@ def register_commands(app):
         for challenge in created:
             click.echo(f"Added '{challenge.title}' ({challenge.topic.name}, {challenge.difficulty.label}).")
         click.echo(f"\n{len(created)} challenges added and published.")
+
+    @app.cli.command("cleanup-guests")
+    def cleanup_guests():
+        """Delete guest accounts older than the retention period, with their data.
+
+        Safe to run at any time; real accounts are never touched. Meant to be
+        run on a schedule on the deployed site.
+        """
+        deleted = delete_expired_guests()
+        click.echo(
+            f"Deleted {deleted} expired guest account{'s' if deleted != 1 else ''} "
+            f"(older than {GUEST_RETENTION_DAYS} days)."
+        )
 
     @app.cli.command("ai-check")
     def ai_check():

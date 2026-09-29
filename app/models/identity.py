@@ -22,7 +22,7 @@ from enum import StrEnum
 from typing import Optional
 
 from flask_login import UserMixin
-from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -141,6 +141,11 @@ class Person(Party):
     # Learners can hide themselves from the public leaderboard (spec FR09).
     leaderboard_visible: Mapped[bool] = mapped_column(default=True)
 
+    # A temporary account from "Try as Guest" (spec PR-A3). server_default
+    # gives every existing row False when this column is added, so accounts
+    # created before guest mode count as real accounts.
+    is_guest: Mapped[bool] = mapped_column(default=False, server_default=false())
+
     learner_profile: Mapped[Optional["LearnerProfile"]] = relationship(
         back_populates="person", cascade="all, delete-orphan"
     )
@@ -223,6 +228,11 @@ class UserAccount(UserMixin, db.Model):
     def display_name(self):
         """The account holder's display name, for page headers and menus."""
         return self.party.display_name
+
+    @property
+    def is_guest(self):
+        """True for a temporary "Try as Guest" account (spec PR-A3)."""
+        return self.party.is_guest
 
     def __repr__(self):
         return f"<UserAccount {self.id} party={self.party_id}>"
