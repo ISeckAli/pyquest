@@ -7,7 +7,7 @@ URL in its @bp.route(...) decorator, and sends its return value back to the
 browser as the response.
 """
 
-from flask import jsonify, render_template, request
+from flask import jsonify, redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.main import bp
@@ -36,6 +36,17 @@ def health():
     misconfigured, and the problem can be traced to the right layer.
     """
     return jsonify(status="ok")
+
+
+@bp.route("/favicon.ico")
+def favicon():
+    """Point browsers that ask for the old favicon.ico name at the real icon.
+
+    Pages declare the icon in base.html, but some browsers still request
+    /favicon.ico directly. A permanent redirect answers them once; the
+    browser then remembers it.
+    """
+    return redirect(url_for("static", filename="favicon.svg"), code=301)
 
 
 @bp.route("/leaderboard")

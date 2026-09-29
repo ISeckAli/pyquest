@@ -18,8 +18,10 @@ import threading
 import time
 from functools import wraps
 
-from flask import current_app, jsonify, request
+from flask import current_app, request
 from flask_login import current_user
+
+from app.errors import error_response
 
 # name: (requests allowed, per this many seconds). Tunable.
 LIMITS = {
@@ -35,7 +37,6 @@ LIMITS = {
 }
 
 LIMITED_METHODS = ("POST", "PUT")
-TOO_MANY_MESSAGE = "Too many requests. Please wait a moment and try again."
 
 # Expired counters are cleared out once the store holds this many, so
 # memory use stays bounded.
@@ -82,21 +83,13 @@ def _client_key():
     return f"ip:{request.remote_addr}"
 
 
-def _too_many(retry_after):
-    if request.path.startswith("/api/"):
-        response = jsonify(error=TOO_MANY_MESSAGE)
-        response.status_code = 429
-    else:
-        response = current_app.response_class(TOO_MANY_MESSAGE, status=429, mimetype="text/plain")
-    response.headers["Retry-After"] = str(retry_after)
-    return response
-
-
 def rate_limit(name):
     """Limit a view's POST and PUT requests by the rule called name in LIMITS.
 
     Place it below any login or role check, so requests that are refused
-    anyway do not use up the allowance.
+    anyway do not use up the allowance. Over the limit, pages get the styled
+    429 page and the API gets JSON (see app/errors.py), both with a
+    Retry-After header.
     """
     limit, period = LIMITS[name]
 
@@ -110,7 +103,7 @@ def rate_limit(name):
                     f"{name}:{_client_key()}", limit, period, clock()
                 )
                 if not allowed:
-                    return _too_many(retry_after)
+                    return error_response(429, retry_after=retry_after)
             return view(*args, **kwargs)
 
         return wrapped_view

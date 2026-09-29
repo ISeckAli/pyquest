@@ -25,6 +25,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {# The brand leads the tab title; each page supplies the part after it. #}
     <title>PyQuest | {% block title %}Level Up Your Python{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
     {# url_for builds the path from Flask's static folder, so links keep
        working even if the site is later served under a different path.
        style.css holds the theme; components.css builds on it. #}

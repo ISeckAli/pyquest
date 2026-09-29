@@ -68,10 +68,13 @@ def create_app(config_name=None):
     login_manager.init_app(app)
     csrf.init_app(app)
 
-    # Security headers on every response (spec PR-N2).
+    # Security headers on every response (spec PR-N2), and friendly error
+    # pages instead of the server's plain defaults.
+    from app.errors import register_error_handlers
     from app.security import register_security_headers
 
     register_security_headers(app)
+    register_error_handlers(app)
 
     # Importing the models package registers every table with SQLAlchemy.
     # Without this import, migrations would not see the models and
