@@ -1,0 +1,37 @@
+/*
+  Guest mode styles (spec PR-A3): the "Try as Guest" button on the landing
+  page, and the banner guests see on every page.
+*/
+
+/* The Try as Guest button is a form (a POST with a CSRF token), laid out
+   inline so it sits beside the other hero buttons. */
+.guest-form {
+    display: inline;
+}
+
+.guest-form .btn {
+    font: inherit;
+    cursor: pointer;
+}
+
+.guest-note {
+    margin-top: 14px;
+    font-size: 0.9rem;
+    opacity: 0.75;
+}
+
+.guest-banner {
+    max-width: 900px;
+    margin: 16px auto 0;
+    padding: 10px 16px;
+    background: rgba(255, 215, 90, 0.08);
+    border: 1px solid rgba(255, 215, 90, 0.6);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.guest-banner a {
+    color: #FFD75A;
+    font-weight: 600;
+}

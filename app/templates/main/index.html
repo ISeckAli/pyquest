@@ -1,17 +1,15 @@
 {#
-  Landing page, rendered by the main blueprint's index view.
-
-  Extends the shared layout in base.html and fills in only the title and
-  content blocks. "Start Your Mission" leads to sign-up and "View
-  Challenges" to the public challenge library.
-
-  Emoji in the card headings are wrapped in aria-hidden spans so screen
-  readers read the heading text only, rather than announcing each emoji by
-  name (for example "high voltage").
+  The landing page. Visitors can start a guest session with one click
+  (spec PR-A3); the button is a small POST form with a CSRF token, so
+  another website cannot create guest accounts through a visitor's browser.
 #}
 {% extends "base.html" %}
 
 {% block title %}Level Up Your Python{% endblock %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/guest.css') }}">
+{% endblock %}
 
 {% block content %}
 <section class="hero">
@@ -21,9 +19,20 @@
         Complete missions, earn points, level up, and build real coding skills.
     </p>
     <div class="hero-actions">
-        <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Start Your Mission</a>
+        {% if current_user.is_authenticated %}
+            <a class="btn btn-primary" href="{{ url_for('challenges.library') }}">Continue Your Mission</a>
+        {% else %}
+            <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Start Your Mission</a>
+            <form class="guest-form" method="post" action="{{ url_for('auth.start_guest') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-secondary">Try as Guest</button>
+            </form>
+        {% endif %}
         <a class="btn btn-secondary" href="{{ url_for('challenges.library') }}">View Challenges</a>
     </div>
+    {% if not current_user.is_authenticated %}
+        <p class="guest-note">No sign-up needed to try it. Guest progress is temporary.</p>
+    {% endif %}
 </section>
 
 <section id="features" class="features">

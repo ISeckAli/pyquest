@@ -30,6 +30,9 @@
        style.css holds the theme; components.css builds on it. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    {% if current_user.is_authenticated and current_user.is_guest %}
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/guest.css') }}">
+    {% endif %}
     {# Pages add their own stylesheets here, so styles used by only a few
        pages are not downloaded on every page. #}
     {% block extra_head %}{% endblock %}
@@ -53,7 +56,12 @@
                     {% if current_user.has_role(RoleType.INSTRUCTOR) or current_user.has_role(RoleType.SYSTEM_ADMINISTRATOR) %}
                         <a href="{{ url_for('instructor.challenge_list') }}">Instructor</a>
                     {% endif %}
-                    <a href="{{ url_for('auth.settings') }}">Settings</a>
+                    {% if current_user.is_guest %}
+                        {# Guests have no settings; signing up is what they need instead. #}
+                        <a class="nav-cta" href="{{ url_for('auth.register') }}">Save progress</a>
+                    {% else %}
+                        <a href="{{ url_for('auth.settings') }}">Settings</a>
+                    {% endif %}
                     {# Logout must be a POST with a CSRF token (see
                        app/auth/routes.py), so it is a small form. #}
                     <form class="nav-form" method="post" action="{{ url_for('auth.logout') }}">
@@ -74,6 +82,16 @@
     </header>
 
     <main>
+        {# Reminds guests their progress is temporary, on every page, with
+           the way to keep it (spec PR-A3). #}
+        {% if current_user.is_authenticated and current_user.is_guest %}
+            <p class="guest-banner" role="note">
+                You are exploring as a guest, so your progress is temporary.
+                <a href="{{ url_for('auth.register') }}">Create a free account</a>
+                to keep it.
+            </p>
+        {% endif %}
+
         {# One-time notices from flash(), such as "You have been logged out".
            role="status" lets screen readers announce them politely. #}
         {% with messages = get_flashed_messages(with_categories=true) %}
