@@ -6,7 +6,10 @@ reviews follow exactly the same guardrails as hints: only visible examples
 are shared, learner text is wrapped as data, every reply passes the leak
 check, AI calls count toward the daily limit, and failures fall back to a
 friendly message. The helpers are underscore-named because they are
-internal to the Coach, shared between these two modules only.
+internal to the Coach, shared between these modules only.
+
+The code review also receives the automatic style checks (Part 14), so the
+Coach can explain the most useful one in its own words.
 """
 
 from datetime import UTC, datetime, time, timedelta
@@ -22,6 +25,7 @@ from app.models import (
     Submission,
     SubmissionStatus,
 )
+from app.services.code_quality import analyze
 from app.services.coach import (
     CoachError,
     CoachLimitError,
@@ -137,7 +141,7 @@ def ask_coach(account, challenge, message, code, now=None):
     )
     db.session.add(learner_message)
 
-    reply = _ask_ai(account, "chat", prompt, challenge, day)
+    reply = _ask_ai(account, "chat", prompt, challenge, day, learner_code=code)
     coach_message = CoachMessage(
         party_id=account.party_id,
         challenge_id=challenge.id,
@@ -154,6 +158,15 @@ def ask_coach(account, challenge, message, code, now=None):
 # ---------------------------------------------------------------------------
 # Code review after passing (PR-C3)
 # ---------------------------------------------------------------------------
+
+def _style_findings(code):
+    """The automatic style checks the code did not pass, as one sentence."""
+    report = analyze(code)
+    if report is None:
+        return "none"
+    failed = [f"{check['title']} ({check['detail']})" for check in report["checks"] if not check["passed"]]
+    return "; ".join(failed) or "none: every style check passed"
+
 
 def review_solution(account, challenge, now=None):
     """Review the learner's passing code and return the Coach message.
@@ -186,14 +199,16 @@ def review_solution(account, challenge, now=None):
     prompt = (
         f"{_challenge_context(challenge)}\n\n"
         f"The learner's passing code:\n{_wrap_code(solved.code)}\n\n"
+        f"Automatic style checks found: {_style_findings(solved.code)}.\n\n"
         "The learner has already solved this challenge and every test passed. "
         "Review their code for readability, naming, and structure. Give up to three "
-        "specific, actionable suggestions as short sentences, naming any more "
-        "idiomatic Python technique they could use. Do not rewrite their code and do "
-        "not show code blocks. If the code is already clean, say so and suggest one "
-        "thing to explore next."
+        "specific, actionable suggestions as short sentences, starting with the most "
+        "useful style finding above if there is one, and naming any more idiomatic "
+        "Python technique they could use. Do not rewrite their code and do not show "
+        "code blocks. If the code is already clean, say so and suggest one thing to "
+        "explore next."
     )
-    reply = _ask_ai(account, "review", prompt, challenge, _today(now))
+    reply = _ask_ai(account, "review", prompt, challenge, _today(now), learner_code=solved.code)
 
     review = CoachMessage(
         party_id=account.party_id,

@@ -1,7 +1,8 @@
 """
 Grading service: turns a learner's test results into a pass or fail, records
 the submission, and awards XP, mission bonuses, streak days, and badges
-(spec FR06, FR07, FR08, FR10, PR-G1, PR-L3).
+(spec FR06, FR07, FR08, FR10, PR-G1, PR-L3). Passing submissions also get a
+code quality report (Part 14), which never affects XP.
 
 How grading works with code that runs in the browser (decision DR-03):
 
@@ -24,6 +25,7 @@ from sqlalchemy import func, select
 from app.extensions import db
 from app.models import ContentSource, Hint, LearnerProfile, Submission, SubmissionStatus
 from app.services.challenges import normalise_newlines
+from app.services.code_quality import analyze
 from app.services.gamification import award_badges, displayed_streak, record_activity
 from app.services.missions import describe, progress_missions
 
@@ -244,6 +246,8 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
         "level": profile.level,
         "current_streak": displayed_streak(profile, account.party, now),
         "new_badges": new_badges,
+        # Style advice for a working solution (Part 14); never affects XP.
+        "quality": analyze(code) if passed_all else None,
         "tests": feedback_tests,
     }
     return submission, feedback

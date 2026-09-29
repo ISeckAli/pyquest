@@ -1,14 +1,14 @@
 /*
   Challenge workspace: the code editor, running Python in the browser,
-  saving work, submitting results for grading, rewards, and the AI Coach
-  (spec FR05 to FR10, section 5.9, decision DR-03).
+  saving work, submitting results for grading, rewards, code quality, and
+  the AI Coach (spec FR05 to FR10, section 5.9, Part 14, decision DR-03).
 
   - Run examples: runs the learner's code on the visible tests only and
     compares the output here. Nothing is sent to the server; no XP.
   - Submit: runs every test (hidden ones included), sends the outputs to
     the server, and shows its verdict. The server holds the hidden expected
     outputs, decides pass or fail, and awards XP, mission bonuses, streak
-    days, and badges, which are shown after a pass.
+    days, and badges. A pass also shows a code quality report.
   - Autosave: the code is saved shortly after the learner stops typing, so
     leaving the page and coming back never loses work.
   - AI Coach: progressive hints, and "Why did this fail?" after a failed
@@ -615,6 +615,39 @@
     return items;
   }
 
+  // The style report for a passing solution (Part 14). Only checks that
+  // need attention are listed; style never changes XP.
+  function qualityBlock(quality) {
+    const wrapper = element("div", "quality-block");
+    const good = quality.score >= 70;
+    wrapper.append(
+      element(
+        "p",
+        `result-summary ${good ? "is-pass" : "is-fail"}`,
+        `Code quality: ${quality.score}/100 (${quality.rating})`,
+      ),
+    );
+
+    const needsAttention = quality.checks.filter((check) => !check.passed);
+    if (needsAttention.length === 0) {
+      wrapper.append(element("p", "result-note", `All ${quality.checks.length} style checks passed.`));
+    }
+    for (const check of needsAttention) {
+      const box = element("div", "result-item is-fail");
+      box.append(element("h3", null, `Needs attention: ${check.title}`));
+      box.append(element("p", "result-note", check.detail));
+      wrapper.append(box);
+    }
+    wrapper.append(
+      element(
+        "p",
+        "result-note",
+        "Style checks never change your XP. Use Review my solution for the Coach's suggestions.",
+      ),
+    );
+    return wrapper;
+  }
+
   function showResults({ heading, passed, items, note, feedback }) {
     resultsElement.replaceChildren(
       element("p", `result-summary ${passed ? "is-pass" : "is-fail"}`, heading),
@@ -623,6 +656,9 @@
       resultsElement.append(outcomeMessage(feedback));
       if (feedback.passed) {
         resultsElement.append(...rewardItems(feedback));
+        if (feedback.quality) {
+          resultsElement.append(qualityBlock(feedback.quality));
+        }
       } else if (feedback.submission_id) {
         resultsElement.append(explanationBlock(feedback.submission_id));
       }
