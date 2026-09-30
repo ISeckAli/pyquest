@@ -1,7 +1,8 @@
 {#
-  Learner dashboard (spec FR14, with FR07 to FR10 and PR-C5), rendered by
-  learner.dashboard: level and progress, XP, streak, today's missions,
-  progress charts, the Coach summary, and the badge collection.
+  Learner dashboard (spec FR14, with FR07 to FR10, PR-C5, and Part 15),
+  rendered by learner.dashboard: level and progress, XP, streak, recommended
+  challenges, today's missions, progress charts, the Coach summary, and the
+  badge collection.
 
   Every chart has a text summary beneath it with the same numbers, since
   screen readers cannot read a picture (WCAG 2.1).
@@ -42,6 +43,27 @@
             <div class="level-bar-fill" style="width: {{ progress.percent }}%"></div>
         </div>
         <p class="field-hint level-note">{{ progress.xp_to_next }} XP to go.</p>
+    </div>
+
+    <div class="panel">
+        <h2>Recommended for you</h2>
+        {% if recommended %}
+            <p class="field-hint">Chosen from your results: easier practice when a challenge is tough, harder ones when you're ready.</p>
+            <div class="rec-list">
+                {% for rec in recommended %}
+                    <a class="rec-card" href="{{ url_for('challenges.detail', slug=rec.slug) }}">
+                        <span class="rec-title">{{ rec.title }}</span>
+                        <span class="rec-meta">
+                            <span class="pill pill-{{ rec.difficulty_value }}">{{ rec.difficulty }}</span>
+                            <span class="pill">{{ rec.topic }}</span>
+                        </span>
+                        <span class="rec-reason">{{ rec.reason }}</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="field-hint">You've solved every challenge. Amazing work! New ones will appear here.</p>
+        {% endif %}
     </div>
 
     <div class="panel">

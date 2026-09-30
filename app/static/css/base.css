@@ -1,6 +1,7 @@
 /*
   Site-wide additions loaded on every page: accessibility helpers (spec
-  NFR04, WCAG 2.1), footer links, and the legal pages.
+  NFR04, WCAG 2.1), footer links, the legal pages, and recommendations
+  (Part 15).
 */
 
 /* ---------------------------------------------------------------------------
@@ -103,4 +104,58 @@ main:focus {
 
 .legal-page a {
     color: var(--blue);
+}
+
+/* ---------------------------------------------------------------------------
+   Recommendations (Part 15): dashboard cards and "Recommended next"
+   --------------------------------------------------------------------------- */
+.rec-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.rec-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    color: var(--text);
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.rec-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-2px);
+}
+
+.rec-title {
+    font-weight: 700;
+}
+
+.rec-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.rec-reason {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.next-challenge {
+    margin: 14px 0;
+    padding: 14px 16px;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+
+.next-challenge .btn {
+    margin: 6px 0;
 }

@@ -2,7 +2,8 @@
 Grading service: turns a learner's test results into a pass or fail, records
 the submission, and awards XP, mission bonuses, streak days, and badges
 (spec FR06, FR07, FR08, FR10, PR-G1, PR-L3). Passing submissions also get a
-code quality report (Part 14), which never affects XP.
+code quality report (Part 14), which never affects XP, and a recommended
+next challenge (Part 15).
 
 How grading works with code that runs in the browser (decision DR-03):
 
@@ -28,6 +29,7 @@ from app.services.challenges import normalise_newlines
 from app.services.code_quality import analyze
 from app.services.gamification import award_badges, displayed_streak, record_activity
 from app.services.missions import describe, progress_missions
+from app.services.recommendations import recommendations
 
 MAX_CODE_LENGTH = 20_000
 MAX_OUTPUT_LENGTH = 65_536  # 64 KB of output per test (spec FR06).
@@ -231,6 +233,9 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
     # together, so they can never disagree (spec FR07).
     db.session.commit()
 
+    # Chosen after the commit, so this solve already counts (Part 15).
+    next_up = recommendations(account, limit=1) if passed_all else []
+
     feedback = {
         # Lets the page ask the Coach about this exact submission (PR-C2).
         "submission_id": submission.id,
@@ -248,6 +253,8 @@ def grade_submission(account, challenge, code, results, execution_ms=None, now=N
         "new_badges": new_badges,
         # Style advice for a working solution (Part 14); never affects XP.
         "quality": analyze(code) if passed_all else None,
+        # What to try next (Part 15).
+        "next": next_up[0].as_json() if next_up else None,
         "tests": feedback_tests,
     }
     return submission, feedback

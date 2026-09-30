@@ -115,6 +115,9 @@ def detail(slug):
             "saveUrl": url_for("api.save_workspace_code", slug=challenge.slug),
             "workerUrl": url_for("static", filename="js/python-worker.js"),
             "monacoBase": MONACO_BASE,
+            # Where a recommended next challenge lives (Part 15); the page
+            # swaps SLUG for the recommended challenge's slug.
+            "challengeUrlTemplate": url_for("challenges.detail", slug="SLUG"),
             # AI Coach: hints (PR-C1) and failure explanations (PR-C2).
             "hintsUrl": url_for("api.request_hint", slug=challenge.slug),
             "explanationUrlTemplate": _url_template("api.explain_submission", submission_id=0),

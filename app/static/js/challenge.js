@@ -1,14 +1,16 @@
 /*
   Challenge workspace: the code editor, running Python in the browser,
-  saving work, submitting results for grading, rewards, code quality, and
-  the AI Coach (spec FR05 to FR10, section 5.9, Part 14, decision DR-03).
+  saving work, submitting results for grading, rewards, code quality, the
+  recommended next challenge, and the AI Coach (spec FR05 to FR10, section
+  5.9, Parts 14 and 15, decision DR-03).
 
   - Run examples: runs the learner's code on the visible tests only and
     compares the output here. Nothing is sent to the server; no XP.
   - Submit: runs every test (hidden ones included), sends the outputs to
     the server, and shows its verdict. The server holds the hidden expected
     outputs, decides pass or fail, and awards XP, mission bonuses, streak
-    days, and badges. A pass also shows a code quality report.
+    days, and badges. A pass also shows a code quality report and a
+    recommended next challenge.
   - Autosave: the code is saved shortly after the learner stops typing, so
     leaving the page and coming back never loses work.
   - AI Coach: progressive hints, and "Why did this fail?" after a failed
@@ -648,6 +650,17 @@
     return wrapper;
   }
 
+  // The recommended next challenge after a pass (Part 15), with why it
+  // was chosen.
+  function nextBlock(next) {
+    const box = element("div", "next-challenge");
+    box.append(element("p", "result-label", "Recommended next"));
+    const link = element("a", "btn btn-primary btn-small", `${next.title} (${next.difficulty})`);
+    link.href = config.challengeUrlTemplate.replace("SLUG", encodeURIComponent(next.slug));
+    box.append(link, element("p", "result-note", next.reason));
+    return box;
+  }
+
   function showResults({ heading, passed, items, note, feedback }) {
     resultsElement.replaceChildren(
       element("p", `result-summary ${passed ? "is-pass" : "is-fail"}`, heading),
@@ -656,6 +669,9 @@
       resultsElement.append(outcomeMessage(feedback));
       if (feedback.passed) {
         resultsElement.append(...rewardItems(feedback));
+        if (feedback.next) {
+          resultsElement.append(nextBlock(feedback.next));
+        }
         if (feedback.quality) {
           resultsElement.append(qualityBlock(feedback.quality));
         }

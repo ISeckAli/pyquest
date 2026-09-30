@@ -18,6 +18,7 @@ from app.services.coach_summary import create_summary, todays_summary
 from app.services.gamification import BADGES, displayed_streak, earned_badges
 from app.services.grading import LEVEL_XP_STEP
 from app.services.missions import describe, todays_missions
+from app.services.recommendations import recommendations
 
 
 def _level_progress(total_xp, level):
@@ -39,11 +40,12 @@ def _level_progress(total_xp, level):
 @bp.route("/dashboard")
 @role_required(RoleType.LEARNER)
 def dashboard():
-    """The learner's home page (spec FR14, FR07 to FR10, PR-C5).
+    """The learner's home page (spec FR14, FR07 to FR10, PR-C5, Part 15).
 
     Shows level and progress to the next level, XP, the current and longest
-    streak, today's missions, progress charts, the Coach summary, and the
-    badge collection. Visiting creates today's missions if needed.
+    streak, recommended challenges, today's missions, progress charts, the
+    Coach summary, and the badge collection. Visiting creates today's
+    missions if needed.
     """
     now = datetime.now(UTC)
     person = current_user.party
@@ -65,6 +67,7 @@ def dashboard():
         profile=profile,
         progress=_level_progress(profile.total_xp, profile.level),
         streak=displayed_streak(profile, person, now),
+        recommended=[item.as_json() for item in recommendations(current_user)],
         missions=[describe(mission) for mission in todays_missions(current_user, now)],
         analytics=learner_analytics(current_user, now),
         summary=todays_summary(current_user, now),
