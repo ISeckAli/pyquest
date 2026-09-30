@@ -28,6 +28,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def database_url(address):
+    """A database address in the form SQLAlchemy needs.
+
+    Postgres hosts such as Neon give addresses starting with postgresql://
+    (or the older postgres://). SQLAlchemy also needs to know which driver
+    to use, so these become postgresql+psycopg://. Anything else, such as a
+    SQLite address or one that already names a driver, is left unchanged,
+    so the host's address can be pasted in exactly as given.
+    """
+    if not address:
+        return address
+    for prefix in ("postgres://", "postgresql://"):
+        if address.startswith(prefix):
+            return "postgresql+psycopg://" + address[len(prefix):]
+    return address
+
+
 class Config:
     """Settings shared by every environment."""
 
@@ -110,7 +127,7 @@ class DevelopmentConfig(Config):
     # Flask-SQLAlchemy places a relative SQLite path inside Flask's instance/
     # folder, which Git ignores. Setting DATABASE_URL overrides this, for
     # example to develop against a Postgres database before deploying.
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL", "sqlite:///pyquest.db")
+    SQLALCHEMY_DATABASE_URI = database_url(os.environ.get("DATABASE_URL")) or "sqlite:///pyquest.db"
 
 
 class TestingConfig(Config):
@@ -144,7 +161,13 @@ class ProductionConfig(Config):
     # No fallbacks: a missing value must stop the app from starting rather
     # than silently running with an insecure key or no database.
     SECRET_KEY = os.environ.get("SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = database_url(os.environ.get("DATABASE_URL"))
+
+    # The free Postgres host pauses an idle database, which drops open
+    # connections. pool_pre_ping tests each connection before use and
+    # quietly reconnects, so the first visitor after a pause gets a page,
+    # not an error; pool_recycle replaces connections before they go stale.
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
     # Only send the session cookie over HTTPS. Not set in development, where
     # the local server uses plain HTTP and the cookie would never be sent.

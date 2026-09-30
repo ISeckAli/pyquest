@@ -1,0 +1,43 @@
+# Render Blueprint: how Render builds and runs PyQuest (spec DR-11, $0).
+#
+# In Render: New > Blueprint, then choose this repository. Render reads
+# this file and asks for the values marked sync: false, so secrets never
+# go into the repository.
+
+services:
+  - type: web
+    name: pyquest
+    runtime: python
+    plan: free
+    # Deploy again automatically whenever main is pushed to GitHub.
+    autoDeploy: true
+    buildCommand: pip install -r requirements.txt
+    # On every start: bring the database up to date, add any missing seed
+    # challenges (existing ones are skipped), then start the production
+    # server. One worker process because rate limits are kept in memory
+    # (app/rate_limit.py); four threads serve several visitors at once. The
+    # timeout allows for a slow AI reply plus one retry.
+    startCommand: >-
+      flask --app app db upgrade &&
+      flask --app app seed &&
+      gunicorn "app:create_app()" --workers 1 --threads 4 --timeout 60 --bind 0.0.0.0:$PORT
+    # Render calls this after each deploy to confirm the app started.
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.3
+      - key: FLASK_CONFIG
+        value: production
+      # A strong random key, created by Render and never shown in the repo.
+      - key: SECRET_KEY
+        generateValue: true
+      # Pasted into Render during setup (Neon's connection address).
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_PROVIDER
+        value: gemini
+      - key: AI_MODEL
+        value: gemini-3.5-flash-lite
+      # Pasted into Render during setup (from Google AI Studio).
+      - key: GEMINI_API_KEY
+        sync: false
