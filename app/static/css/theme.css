@@ -1,0 +1,237 @@
+/*
+  Theme polish (styling pass): loaded last on every page, after each page's
+  own stylesheet, so these rules refine the whole site in one place without
+  editing the original files.
+
+  1. The responsive header and mobile menu
+  2. Consistent buttons
+  3. The "tech" look
+  4. Phone sizes
+*/
+
+:root {
+    --font-mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+
+/* ---------------------------------------------------------------------------
+   1. Header and mobile menu
+   --------------------------------------------------------------------------- */
+
+/* One even row of links: spacing comes from the gap, not from margins on
+   each link, so the logout button lines up with the links beside it. */
+.nav {
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 26px;
+}
+
+.nav-links a,
+.nav-form {
+    margin-left: 0;
+}
+
+/* Hidden until nav.js marks the header as having a working menu button, so
+   without JavaScript the links simply stay visible. */
+.nav-toggle {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.nav-toggle:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+@media (max-width: 900px) {
+    .nav {
+        padding: 14px 20px;
+    }
+
+    .nav.has-toggle .nav-toggle {
+        display: inline-flex;
+    }
+
+    /* The links become a vertical list below the logo, shown when open. */
+    .nav.has-toggle .nav-links {
+        display: none;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        width: 100%;
+        padding-bottom: 6px;
+    }
+
+    .nav.has-toggle.is-open .nav-links {
+        display: flex;
+    }
+
+    .nav.has-toggle .nav-links a:not(.nav-cta),
+    .nav.has-toggle .nav-form {
+        display: block;
+        padding: 12px 4px;
+        border-top: 1px solid var(--glass-border);
+    }
+
+    .nav.has-toggle .nav-button {
+        width: 100%;
+        text-align: left;
+    }
+
+    .nav.has-toggle .nav-links a.nav-cta {
+        margin-top: 10px;
+        text-align: center;
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Consistent buttons
+   --------------------------------------------------------------------------- */
+
+/* Every button has the same 2px border box (transparent unless coloured),
+   font, and line height, whether it is a link or a form button, so buttons
+   side by side are exactly the same height. */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 2px solid transparent;
+    font-family: inherit;
+    line-height: 1.2;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.btn-secondary {
+    border-color: var(--blue);
+}
+
+/* The rule above would otherwise shrink full-width form buttons. */
+.btn-block {
+    display: flex;
+    width: 100%;
+}
+
+/* Rows of buttons and links line up on their centres and wrap neatly. */
+.hero-actions,
+.editor-toolbar,
+.button-row,
+.filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+}
+
+.hero-actions {
+    justify-content: center;
+}
+
+.hero-actions .btn {
+    margin: 0;
+}
+
+.btn-link {
+    font-family: inherit;
+    line-height: 1.2;
+}
+
+/* ---------------------------------------------------------------------------
+   3. The "tech" look
+   --------------------------------------------------------------------------- */
+.nav-brand {
+    font-family: var(--font-mono);
+    letter-spacing: -0.5px;
+}
+
+.stat-value,
+.report-value,
+.pill {
+    font-family: var(--font-mono);
+}
+
+.pill {
+    letter-spacing: 0.2px;
+}
+
+::selection {
+    background: rgba(139, 92, 246, 0.45);
+    color: #FFFFFF;
+}
+
+html {
+    scrollbar-color: rgba(139, 92, 246, 0.5) transparent;
+    scrollbar-width: thin;
+}
+
+/* The same gentle lift and glow on every clickable card. */
+.challenge-card,
+.rec-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.challenge-card:hover,
+.rec-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 24px rgba(139, 92, 246, 0.35);
+}
+
+/* Wide tables scroll sideways inside their box instead of stretching the page. */
+.table-wrap {
+    overflow-x: auto;
+}
+
+/* ---------------------------------------------------------------------------
+   4. Phone sizes
+   --------------------------------------------------------------------------- */
+@media (max-width: 600px) {
+    .page-section,
+    .settings-page {
+        padding: 24px 14px 40px;
+    }
+
+    .page-title {
+        font-size: 1.7rem;
+    }
+
+    .hero {
+        min-height: auto;
+        padding: 48px 18px;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .btn {
+        padding: 12px 22px;
+    }
+
+    .btn-small {
+        padding: 9px 18px;
+    }
+
+    .panel {
+        padding: 22px 16px;
+    }
+
+    .challenge-grid,
+    .rec-list {
+        grid-template-columns: 1fr;
+    }
+}
