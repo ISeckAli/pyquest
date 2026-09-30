@@ -9,6 +9,10 @@ services:
     name: pyquest
     runtime: python
     plan: free
+    # The same region as the Neon database (AWS US East 2, Ohio), so every
+    # database request stays inside one data centre. A service's region
+    # cannot be changed after it is created.
+    region: ohio
     # Deploy again automatically whenever main is pushed to GitHub.
     autoDeploy: true
     buildCommand: pip install -r requirements.txt
